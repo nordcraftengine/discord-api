@@ -15,6 +15,8 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+import { getMessages } from "./discord-api";
+
 export default {
 	// The scheduled handler is invoked at the interval set in our wrangler.toml's
 	// [[triggers]] configuration.
@@ -29,5 +31,7 @@ export default {
 		// You could store this result in KV, write to a D1 Database, or publish to a Queue.
 		// In this template, we'll just log the result:
 		console.log(`trigger fired at ${event.cron}: ${wasSuccessful}`);
+
+		const test = await getMessages(ctx, env);
 	},
 } satisfies ExportedHandler<Env>;
