@@ -60,7 +60,6 @@ export const saveData = async (
 				`There was an error when inserting the users ${insertUsers.error.message}`
 			)
 		}
-		console.log('insertUsers', insertUsers)
 	}
 
 	// Save the topics
@@ -72,7 +71,6 @@ export const saveData = async (
 				`There was an error when inserting the topics ${insertTopics.error.message}`
 			)
 		}
-		console.log('insertTopics', insertTopics)
 	}
 
 	// Save the messages
@@ -86,7 +84,6 @@ export const saveData = async (
 				`There was an error when inserting the messages ${insertMessages.error.message}`
 			)
 		}
-		console.log('insertMessages', insertMessages)
 	}
 
 	// Save the mentions
@@ -100,7 +97,6 @@ export const saveData = async (
 				`There was an error when inserting the mentions ${insertMentions.error.message}`
 			)
 		}
-		console.log('insertMentions', insertMentions)
 	}
 
 	// Save the reactions
@@ -114,6 +110,5 @@ export const saveData = async (
 				`There was an error when inserting the reactions ${insertReactions.error.message}`
 			)
 		}
-		console.log('insertReactions', insertReactions)
 	}
 }
