@@ -1,9 +1,9 @@
 export interface ThreadsResponse {
 	has_more: boolean;
-	threads: Thread[];
+	threads: Threads[];
 }
 
-export interface Thread {
+export interface Threads {
 	id: string;
 	type: number;
 	last_message_id: string;
@@ -18,10 +18,10 @@ export interface Thread {
 	owner_id: string;
 	thread_metadata: {
 		archived: boolean;
-		archive_timestamp: Date;
+		archive_timestamp: string;
 		auto_archive_duration: number;
 		locked: boolean;
-		create_timestamp: Date;
+		create_timestamp: string;
 	};
 	message_count: number;
 	member_count: number;
@@ -29,32 +29,38 @@ export interface Thread {
 	applied_tags: string[];
 }
 
-export interface Message {
+export interface Messages {
 	type: number;
 	content: string;
-	mentions: [];
-	mention_roles: [];
-	attachments: [];
-	embeds: [];
-	timestamp: Date;
-	edited_timestamp: Date | null;
+	mentions: Users[];
+	timestamp: string;
+	edited_timestamp: string | null;
 	flags: 0;
-	components: [];
 	id: string;
 	channel_id: string;
-	author: {
-		id: string;
-		username: string;
-		avatar: string;
-		discriminator: number;
-		public_flags: number;
-		flags: number;
-		banner: string | null;
-		accent_color: number | null;
-		global_name: string;
-	};
+	author: Users;
 	pinned: boolean;
 	mention_everyone: boolean;
 	tts: boolean;
 	position: boolean;
+	reactions?:
+		| {
+				emoji: {
+					name: string;
+				};
+				count: number;
+		  }[]
+		| null;
+}
+
+export interface Users {
+	id: string;
+	username: string;
+	avatar: string | null;
+	discriminator: number;
+	public_flags: number;
+	flags: number;
+	banner: string | null;
+	accent_color: number | null;
+	global_name: string | null;
 }
