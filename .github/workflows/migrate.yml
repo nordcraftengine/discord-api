@@ -1,0 +1,28 @@
+name: 'Migrate'
+
+on:
+  push:
+    branches: # Only run when merging to main
+      - main
+    paths: # Only run when a migration file was changed
+      - 'supabase/migrations/**'
+      # Or if the migrate.yml workflow file changes
+      - '.github/workflows/migrate.yml'
+
+env:
+  SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+  SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Migrate Supabase
+        run: |
+          cd worker
+          npx supabase link --project-ref nsymdcrygceepaybopcr
+          npx supabase db push
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}

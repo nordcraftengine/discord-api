@@ -1,0 +1,31 @@
+{
+	"name": "discord-api",
+	"version": "0.0.0",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev --port 60626 --test-scheduled",
+		"start": "wrangler dev --port 60626 --test-scheduled",
+		"cf-typegen": "wrangler types src/worker-configuration.d.ts",
+		"sb:migrate:new": "supabase migration new",
+		"sb:db:reset": "supabase db reset",
+		"sb:codegen": "supabase gen types typescript --local > supabase/types.d.ts"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20241011.0",
+		"eslint": "^9.12.0",
+		"node-loader": "^2.0.0",
+		"typescript": "^5.5.2",
+		"wrangler": "^3.60.3",
+		"@types/bun": "latest"
+	},
+	"dependencies": {
+		"@supabase/supabase-js": "^2.45.5",
+		"discord-api-types": "^0.37.103"
+	},
+	"description": "Fetch data from the Discord API and save it in the database",
+	"main": "index.js",
+	"keywords": [],
+	"author": "",
+	"license": "ISC"
+}
