@@ -1,13 +1,3 @@
-/**
- * Welcome to Cloudflare Workers!
- *
- * This is a template for a Scheduled Worker: a Worker that can run on a
- * configurable interval:
- * https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
 import { getNewData } from './discord-api'
 import { saveData } from '../supabase/updateData'
 
