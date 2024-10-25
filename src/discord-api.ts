@@ -12,14 +12,9 @@ const DISCORD_URL = 'https://discord.com/api/v10'
 
 export const getAllTopics = async (env: Env, channelId?: string) => {
 	const threadsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/threads/active`
-	const response = await fetch(threadsUrl, {
-		method: 'GET',
-		headers: {
-			Authorization: `Bot ${env.DISCORD_TOKEN}`,
-			'Content-Type': 'application/json',
-			Accept: 'application/json',
-		},
-	})
+
+	const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
+
 	const threadsData =
 		(await response.json()) as RESTGetAPIChannelUsersThreadsArchivedResult
 
@@ -39,14 +34,8 @@ export const getMessages = async (
 					? `${DISCORD_URL}/channels/${thread.id}/messages?after=${thread.after}`
 					: `${DISCORD_URL}/channels/${thread.id}/messages`
 
-				const messageResponse = await fetch(messagesUrl, {
-					method: 'GET',
-					headers: {
-						Authorization: `Bot ${env.DISCORD_TOKEN}`,
-						'Content-Type': 'application/json',
-						Accept: 'application/json',
-					},
-				})
+				const messageResponse = await fetchData(messagesUrl, env.DISCORD_TOKEN)
+
 				const messages = (await messageResponse.json()) as APIMessage[]
 				return messages
 			})
@@ -61,12 +50,10 @@ export const getNewData = async (env: Env) => {
 
 	const allTopics = await getAllTopics(env, HELP_CHANNEL_ID)
 	const savedTopics = (await supabase.from('topics').select('*')).data ?? []
-	const savedTopicIds = savedTopics?.map((t) => t.id)
+	const savedTopicIds = new Set(savedTopics?.map((t) => t.id))
 
 	// Get the new topics
-	const newTopics = allTopics.filter(
-		(thread) => !savedTopicIds.includes(thread.id)
-	)
+	const newTopics = allTopics.filter((thread) => !savedTopicIds.has(thread.id))
 
 	//Get the topics with new messages
 	const newMessagesTopics = allTopics
@@ -95,12 +82,13 @@ export const getNewData = async (env: Env) => {
 	const newUsers: APIUser[] = []
 
 	const savedUserIds =
-		(await supabase.from('users').select('id')).data?.map((user) => user.id) ??
-		[]
+		new Set(
+			(await supabase.from('users').select('id')).data?.map((user) => user.id)
+		) ?? []
 
 	newMessages.forEach((message) => {
 		if (
-			!savedUserIds.includes(message.author.id) &&
+			!savedUserIds.has(message.author.id) &&
 			!newUsers.find((user) => user.id === message.author.id)
 		) {
 			newUsers.push(message.author)
@@ -108,8 +96,7 @@ export const getNewData = async (env: Env) => {
 
 		const newMentionUsers = message.mentions.filter(
 			(m) =>
-				!savedUserIds.includes(m.id) &&
-				!newUsers.find((user) => user.id === m.id)
+				!savedUserIds.has(m.id) && !newUsers.find((user) => user.id === m.id)
 		)
 
 		if (newMentionUsers.length > 0) {
@@ -119,3 +106,13 @@ export const getNewData = async (env: Env) => {
 
 	return { newTopics, newMessages, newUsers }
 }
+
+const fetchData = async (url: string, token: string) =>
+	await fetch(url, {
+		method: 'GET',
+		headers: {
+			Authorization: `Bot ${token}`,
+			'Content-Type': 'application/json',
+			Accept: 'application/json',
+		},
+	})
