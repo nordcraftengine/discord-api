@@ -34,6 +34,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      attachments: {
+        Row: {
+          content_type: string | null
+          id: string
+          message_id: string
+          url: string
+        }
+        Insert: {
+          content_type?: string | null
+          id?: string
+          message_id: string
+          url: string
+        }
+        Update: {
+          content_type?: string | null
+          id?: string
+          message_id?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mentions: {
         Row: {
           message_id: string

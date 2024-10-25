@@ -1,5 +1,10 @@
-import { ThreadsResponse, Messages, Users } from './types'
 import { getSupabaseClient } from '../supabase/client'
+import {
+	APIMessage,
+	APIUser,
+	RESTGetAPIChannelUsersThreadsArchivedResult,
+	APIThreadChannel,
+} from 'discord-api-types/v10'
 
 const TODDLE_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
@@ -15,11 +20,12 @@ export const getAllTopics = async (env: Env, channelId?: string) => {
 			Accept: 'application/json',
 		},
 	})
-	const threadsData = (await response.json()) as ThreadsResponse
+	const threadsData =
+		(await response.json()) as RESTGetAPIChannelUsersThreadsArchivedResult
 
-	return channelId
-		? threadsData.threads.filter((t) => t.parent_id === channelId)
-		: threadsData.threads
+	const threads = threadsData.threads as APIThreadChannel[]
+
+	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
 }
 
 export const getMessages = async (
@@ -41,7 +47,7 @@ export const getMessages = async (
 						Accept: 'application/json',
 					},
 				})
-				const messages = (await messageResponse.json()) as Messages[]
+				const messages = (await messageResponse.json()) as APIMessage[]
 				return messages
 			})
 		)
@@ -51,7 +57,7 @@ export const getMessages = async (
 }
 
 export const getNewData = async (env: Env) => {
-	const supabase = getSupabaseClient()
+	const supabase = getSupabaseClient(env)
 
 	const allTopics = await getAllTopics(env, HELP_CHANNEL_ID)
 	const savedTopics = (await supabase.from('topics').select('*')).data ?? []
@@ -77,7 +83,7 @@ export const getNewData = async (env: Env) => {
 
 	// Get messages on a topic
 	// We can't make more then 50 requests per second to Discord API. So we will wait 1 second after each 40 requests
-	const newMessages: Messages[] = []
+	const newMessages: APIMessage[] = []
 	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
 	for (let i = 0; i < newMessagesTopics.length; i += 40) {
@@ -86,7 +92,7 @@ export const getNewData = async (env: Env) => {
 		await delay(1000)
 	}
 
-	const newUsers: Users[] = []
+	const newUsers: APIUser[] = []
 
 	const savedUserIds =
 		(await supabase.from('users').select('id')).data?.map((user) => user.id) ??

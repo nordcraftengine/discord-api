@@ -17,6 +17,6 @@ export default {
 	async scheduled(event, env, ctx): Promise<void> {
 		const { newTopics, newMessages, newUsers } = await getNewData(env)
 
-		const t = await saveData(newTopics, newMessages, newUsers)
+		const t = await saveData(newTopics, newMessages, newUsers, env)
 	},
 } satisfies ExportedHandler<Env>

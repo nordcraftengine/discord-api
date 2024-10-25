@@ -4,4 +4,5 @@ interface Env {
 	ENVIRONMENT: string;
 	DISCORD_TOKEN: string;
 	SUPABASE_ANON_KEY: string;
+	SUPABASE_API_URL: string;
 }

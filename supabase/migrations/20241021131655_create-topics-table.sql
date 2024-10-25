@@ -37,5 +37,12 @@ CREATE TABLE reactions(
   count int NOT NULL
 );
 
+CREATE TABLE attachments(
+  id text PRIMARY KEY DEFAULT uuid_generate_v4(),
+  message_id text NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  url text NOT NULL,
+  content_type text
+);
+
 CREATE INDEX messages_topic_id on messages(topic_id);
 
