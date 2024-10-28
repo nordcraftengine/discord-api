@@ -22,6 +22,6 @@ enabled = true
 # Note: Use secrets to store sensitive data.
 # - https://developers.cloudflare.com/workers/configuration/secrets/
 [vars]
-# DISCORD_TOKEN
-# SUPABASE_ANON_KEY
+# DISCORD_TOKEN 
 # SUPABASE_API_URL
+# SUPABASE_SECRET_KEY
