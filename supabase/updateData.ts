@@ -1,5 +1,6 @@
 import { getSupabaseClient } from './client'
 import { APIMessage, APIThreadChannel, APIUser } from 'discord-api-types/v10'
+import { parse } from 'discord-markdown-parser'
 
 export const saveData = async (
 	topics: APIThreadChannel[],
@@ -35,7 +36,7 @@ export const saveData = async (
 
 	const formattedMessages = messages.map((message) => ({
 		id: message.id,
-		content: message.content,
+		content: parse(message.content, 'normal'),
 		author_id: message.author.id,
 		topic_id: message.channel_id,
 		message_reference: message.id,

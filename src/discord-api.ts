@@ -31,8 +31,8 @@ export const getMessages = async (
 		await Promise.all(
 			threads.map(async (thread) => {
 				const messagesUrl = thread.after
-					? `${DISCORD_URL}/channels/${thread.id}/messages?after=${thread.after}`
-					: `${DISCORD_URL}/channels/${thread.id}/messages`
+					? `${DISCORD_URL}/channels/${thread.id}/messages?after=${thread.after}&limit=100`
+					: `${DISCORD_URL}/channels/${thread.id}/messages?limit=100`
 
 				const messageResponse = await fetchData(messagesUrl, env.DISCORD_TOKEN)
 
