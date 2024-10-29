@@ -8,6 +8,8 @@ DROP TABLE IF EXISTS messages;
 
 DROP TABLE IF EXISTS topics;
 
+DROP TABLE IF EXISTS users;
+
 CREATE TABLE users(
     id text PRIMARY KEY,
     name text,
