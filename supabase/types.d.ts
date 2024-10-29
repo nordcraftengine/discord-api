@@ -120,6 +120,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "message_reference_message_fkey"
+            columns: ["message_reference"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "messages_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
@@ -173,6 +180,7 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
+          topic_message_id: string | null
         }
         Insert: {
           author_id?: string | null
@@ -182,6 +190,7 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
+          topic_message_id?: string | null
         }
         Update: {
           author_id?: string | null
@@ -191,6 +200,7 @@ export type Database = {
           last_message_id?: string
           message_count?: number
           name?: string
+          topic_message_id?: string | null
         }
         Relationships: [
           {
@@ -198,6 +208,13 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "topics_topic_message_id_fkey"
+            columns: ["topic_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
