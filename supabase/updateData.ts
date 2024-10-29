@@ -22,7 +22,6 @@ export const saveData = async (
 		author_id: topic.owner_id,
 		channel_id: topic.parent_id ?? '',
 		last_message_id: topic.last_message_id ?? '',
-		topic_message_id: topic.id,
 		message_count: topic.message_count ?? 0,
 		created_at: topic.thread_metadata?.create_timestamp ?? '',
 	}))

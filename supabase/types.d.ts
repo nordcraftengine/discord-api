@@ -180,7 +180,6 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
-          topic_message_id: string
         }
         Insert: {
           author_id?: string | null
@@ -190,7 +189,6 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
-          topic_message_id: string
         }
         Update: {
           author_id?: string | null
@@ -200,7 +198,6 @@ export type Database = {
           last_message_id?: string
           message_count?: number
           name?: string
-          topic_message_id?: string
         }
         Relationships: [
           {
