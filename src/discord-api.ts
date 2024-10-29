@@ -55,6 +55,8 @@ export const getNewData = async (env: Env) => {
 	// Get the new topics
 	const newTopics = allTopics.filter((thread) => !savedTopicIds.has(thread.id))
 
+	const existingTopics: APIThreadChannel[] = []
+
 	//Get the topics with new messages
 	const newMessagesTopics = allTopics
 		.map((thread) => {
@@ -64,7 +66,7 @@ export const getNewData = async (env: Env) => {
 
 			if (thread.last_message_id !== lastSavedMessage) {
 				// We need to update the last_message_id for this topic
-				newTopics.push(thread)
+				existingTopics.push(thread)
 				return { id: thread.id, after: lastSavedMessage }
 			}
 		})
@@ -106,7 +108,7 @@ export const getNewData = async (env: Env) => {
 		}
 	})
 
-	return { newTopics, newMessages, newUsers }
+	return { newTopics, existingTopics, newMessages, newUsers }
 }
 
 const fetchData = async (url: string, token: string) =>

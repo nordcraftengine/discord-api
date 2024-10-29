@@ -3,6 +3,7 @@ import { APIMessage, APIThreadChannel, APIUser } from 'discord-api-types/v10'
 
 export const saveData = async (
 	topics: APIThreadChannel[],
+	existingTopics: APIThreadChannel[],
 	messages: APIMessage[],
 	users: APIUser[],
 	env: Env
@@ -24,6 +25,12 @@ export const saveData = async (
 		last_message_id: topic.last_message_id ?? '',
 		message_count: topic.message_count ?? 0,
 		created_at: topic.thread_metadata?.create_timestamp ?? '',
+	}))
+
+	const formattedExistingTopics = existingTopics.map((topic) => ({
+		id: topic.id,
+		last_message_id: topic.last_message_id ?? '',
+		message_count: topic.message_count ?? 0,
 	}))
 
 	const formattedMessages = messages.map((message) => ({
@@ -76,13 +83,31 @@ export const saveData = async (
 
 	// Save the topics
 	if (formattedTopics.length > 0) {
-		const insertTopics = await supabase.from('topics').upsert(formattedTopics)
+		const insertTopics = await supabase.from('topics').insert(formattedTopics)
 
 		if (insertTopics.error) {
 			console.error(
 				`There was an error when inserting the topics ${insertTopics.error.message}`
 			)
 		}
+	}
+
+	// Update the topics
+	if (formattedExistingTopics.length > 0) {
+		Promise.all(
+			formattedExistingTopics.map(async (topic) => {
+				const updateTopics = await supabase
+					.from('topics')
+					.update(topic)
+					.eq('id', topic.id)
+
+				if (updateTopics.error) {
+					console.error(
+						`There was an error when updateing the topics ${updateTopics.error.message}`
+					)
+				}
+			})
+		)
 	}
 
 	// Save the messages
