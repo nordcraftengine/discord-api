@@ -63,6 +63,8 @@ export const getNewData = async (env: Env) => {
 			)?.last_message_id
 
 			if (thread.last_message_id !== lastSavedMessage) {
+				// We need to update the last_message_id for this topic
+				newTopics.push(thread)
 				return { id: thread.id, after: lastSavedMessage }
 			}
 		})

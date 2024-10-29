@@ -76,7 +76,7 @@ export const saveData = async (
 
 	// Save the topics
 	if (formattedTopics.length > 0) {
-		const insertTopics = await supabase.from('topics').insert(formattedTopics)
+		const insertTopics = await supabase.from('topics').upsert(formattedTopics)
 
 		if (insertTopics.error) {
 			console.error(
