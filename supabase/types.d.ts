@@ -176,31 +176,31 @@ export type Database = {
           author_id: string | null
           channel_id: string
           created_at: string
+          first_message: string | null
           id: string
           last_message_id: string
           message_count: number
           name: string
-          topic_message_id: string | null
         }
         Insert: {
           author_id?: string | null
           channel_id: string
           created_at: string
+          first_message?: string | null
           id: string
           last_message_id: string
           message_count: number
           name: string
-          topic_message_id?: string | null
         }
         Update: {
           author_id?: string | null
           channel_id?: string
           created_at?: string
+          first_message?: string | null
           id?: string
           last_message_id?: string
           message_count?: number
           name?: string
-          topic_message_id?: string | null
         }
         Relationships: [
           {
@@ -208,13 +208,6 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "topics_topic_message_id_fkey"
-            columns: ["topic_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
         ]
