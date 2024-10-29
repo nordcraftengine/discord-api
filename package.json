@@ -13,15 +13,16 @@
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20241011.0",
+		"@types/bun": "latest",
 		"eslint": "^9.12.0",
 		"node-loader": "^2.0.0",
 		"typescript": "^5.5.2",
-		"wrangler": "^3.60.3",
-		"@types/bun": "latest"
+		"wrangler": "^3.60.3"
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.45.5",
-		"discord-api-types": "^0.37.103"
+		"discord-api-types": "^0.37.103",
+		"discord-markdown-parser": "^1.1.0"
 	},
 	"description": "Fetch data from the Discord API and save it in the database",
 	"main": "index.js",

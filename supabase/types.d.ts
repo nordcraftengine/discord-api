@@ -65,14 +65,17 @@ export type Database = {
       }
       mentions: {
         Row: {
+          id: string
           message_id: string
           user_id: string
         }
         Insert: {
+          id?: string
           message_id: string
           user_id: string
         }
         Update: {
+          id?: string
           message_id?: string
           user_id?: string
         }
@@ -96,7 +99,7 @@ export type Database = {
       messages: {
         Row: {
           author_id: string | null
-          content: string
+          content: Json
           created_at: string
           id: string
           message_reference: string | null
@@ -104,7 +107,7 @@ export type Database = {
         }
         Insert: {
           author_id?: string | null
-          content: string
+          content: Json
           created_at: string
           id: string
           message_reference?: string | null
@@ -112,7 +115,7 @@ export type Database = {
         }
         Update: {
           author_id?: string | null
-          content?: string
+          content?: Json
           created_at?: string
           id?: string
           message_reference?: string | null
@@ -120,17 +123,17 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "message_reference_message_fkey"
-            columns: ["message_reference"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "messages_author_id_fkey"
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_message_reference_fkey"
+            columns: ["message_reference"]
+            isOneToOne: false
+            referencedRelation: "messages"
             referencedColumns: ["id"]
           },
           {
@@ -176,7 +179,6 @@ export type Database = {
           author_id: string | null
           channel_id: string
           created_at: string
-          first_message: string | null
           id: string
           last_message_id: string
           message_count: number
@@ -186,7 +188,6 @@ export type Database = {
           author_id?: string | null
           channel_id: string
           created_at: string
-          first_message?: string | null
           id: string
           last_message_id: string
           message_count: number
@@ -196,7 +197,6 @@ export type Database = {
           author_id?: string | null
           channel_id?: string
           created_at?: string
-          first_message?: string | null
           id?: string
           last_message_id?: string
           message_count?: number
