@@ -28,11 +28,18 @@ export const saveData = async (
 		created_at: topic.thread_metadata?.create_timestamp ?? '',
 	}))
 
-	const formattedExistingTopics = existingTopics.map((topic) => ({
+	const firstMessageUpdate = topics.map((topic) => ({
+		id: topic.id,
+		first_message_id: topic.id,
+	}))
+
+	const lastMessageUpdate = existingTopics.map((topic) => ({
 		id: topic.id,
 		last_message_id: topic.last_message_id ?? '',
 		message_count: topic.message_count ?? 0,
 	}))
+
+	const topicForUpdate = [...firstMessageUpdate, ...lastMessageUpdate]
 
 	const formattedMessages = messages.map((message) => ({
 		id: message.id,
@@ -93,24 +100,6 @@ export const saveData = async (
 		}
 	}
 
-	// Update the topics
-	if (formattedExistingTopics.length > 0) {
-		Promise.all(
-			formattedExistingTopics.map(async (topic) => {
-				const updateTopics = await supabase
-					.from('topics')
-					.update(topic)
-					.eq('id', topic.id)
-
-				if (updateTopics.error) {
-					console.error(
-						`There was an error when updateing the topics ${updateTopics.error.message}`
-					)
-				}
-			})
-		)
-	}
-
 	// Save the messages
 	if (formattedMessages.length > 0) {
 		const insertMessages = await supabase
@@ -122,6 +111,24 @@ export const saveData = async (
 				`There was an error when inserting the messages ${insertMessages.error.message}`
 			)
 		}
+	}
+
+	// Update the topics
+	if (topicForUpdate.length > 0) {
+		Promise.all(
+			topicForUpdate.map(async (topic) => {
+				const updateTopics = await supabase
+					.from('topics')
+					.update(topic)
+					.eq('id', topic.id)
+
+				if (updateTopics.error) {
+					console.error(
+						`There was an error when updating the topics ${updateTopics.error.message}`
+					)
+				}
+			})
+		)
 	}
 
 	// Save the mentions
