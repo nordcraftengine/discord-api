@@ -7,6 +7,7 @@ export const saveData = async ({
 	existingTopics,
 	newMessages,
 	updatedMessages,
+	deleteMessageIds,
 	users,
 	env,
 }: {
@@ -14,6 +15,7 @@ export const saveData = async ({
 	existingTopics: APIThreadChannel[]
 	newMessages: APIMessage[]
 	updatedMessages: APIMessage[]
+	deleteMessageIds: string[]
 	users: APIUser[]
 	env: Env
 }) => {
@@ -271,6 +273,20 @@ export const saveData = async ({
 		if (insertAttachments.error) {
 			console.error(
 				`There was an error when inserting the attachments ${insertAttachments.error.message}`
+			)
+		}
+	}
+
+	// Delete messages
+	if (deleteMessageIds.length > 0) {
+		const deleteMessages = await supabase
+			.from('messages')
+			.delete()
+			.in('id', deleteMessageIds)
+
+		if (deleteMessages.error) {
+			console.error(
+				`There was an error when deleting the messages ${deleteMessages.error.message}`
 			)
 		}
 	}

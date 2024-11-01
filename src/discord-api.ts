@@ -67,6 +67,7 @@ export const getNewData = async (env: Env) => {
 
 	const newMessages: APIMessage[] = []
 	const updatedMessages: APIMessage[] = []
+	const deleteMessageIds: string[] = []
 
 	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
@@ -98,8 +99,13 @@ export const getNewData = async (env: Env) => {
 			}
 		})
 
+		const dMessages = savedMessages
+			.filter((m) => !messages.find((sm) => sm.id === m.id))
+			.map((m) => m.id)
+
 		newMessages.push(...nMessages)
 		updatedMessages.push(...uMessages)
+		deleteMessageIds.push(...dMessages)
 
 		await delay(1000)
 	}
@@ -129,7 +135,14 @@ export const getNewData = async (env: Env) => {
 		}
 	})
 
-	return { newTopics, existingTopics, newMessages, updatedMessages, newUsers }
+	return {
+		newTopics,
+		existingTopics,
+		newMessages,
+		updatedMessages,
+		deleteMessageIds,
+		newUsers,
+	}
 }
 
 const fetchData = async (url: string, token: string) =>
