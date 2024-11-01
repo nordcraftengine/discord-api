@@ -40,7 +40,7 @@ const getMessages = async (threads: { id: string }[], env: Env) => {
 					)
 
 					const messages = (await messageResponse.json()) as APIMessage[]
-					lastMessage = messages[messages.length - 1].id
+					lastMessage = messages.at(-1)?.id
 					if (messages.length < 100) {
 						fetchMore = false
 					}
@@ -74,14 +74,14 @@ export const getNewData = async (env: Env) => {
 	// We can't make more then 50 requests per second to Discord API. So we will wait 1 second after each 40 requests
 	for (let i = 0; i < allTopics.length; i += 40) {
 		const threads = allTopics.slice(i, i + 40)
-		const threadsIds = threads.map((t) => t.id)
+		const threadIds = threads.map((t) => t.id)
 
 		const savedMessages =
 			(
 				await supabase
 					.from('messages')
 					.select('id,updated_at')
-					.in('topic_id', threadsIds)
+					.in('topic_id', threadIds)
 			).data ?? []
 
 		const messages = await getMessages(threads, env)
