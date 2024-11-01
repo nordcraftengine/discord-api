@@ -23,21 +23,29 @@ export const getAllTopics = async (env: Env, channelId?: string) => {
 	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
 }
 
-export const getMessages = async (
-	threads: { id: string; after?: string }[],
-	env: Env
-) => {
+const getMessages = async (threads: { id: string }[], env: Env) => {
 	const messages = (
 		await Promise.all(
 			threads.map(async (thread) => {
-				const messagesUrl = thread.after
-					? `${DISCORD_URL}/channels/${thread.id}/messages?after=${thread.after}&limit=100`
-					: `${DISCORD_URL}/channels/${thread.id}/messages?limit=100`
+				let lastMessage = undefined
+				let fetchMore = true
+				do {
+					const messagesUrl = lastMessage
+						? `${DISCORD_URL}/channels/${thread.id}/messages?after=${lastMessage}&limit=100`
+						: `${DISCORD_URL}/channels/${thread.id}/messages?limit=100`
 
-				const messageResponse = await fetchData(messagesUrl, env.DISCORD_TOKEN)
+					const messageResponse = await fetchData(
+						messagesUrl,
+						env.DISCORD_TOKEN
+					)
 
-				const messages = (await messageResponse.json()) as APIMessage[]
-				return messages
+					const messages = (await messageResponse.json()) as APIMessage[]
+					lastMessage = messages[messages.length - 1].id
+					if (messages.length < 100) {
+						fetchMore = false
+					}
+					return messages
+				} while (fetchMore)
 			})
 		)
 	).flat()
@@ -57,40 +65,53 @@ export const getNewData = async (env: Env) => {
 
 	const existingTopics: APIThreadChannel[] = []
 
-	//Get the topics with new messages
-	const newMessagesTopics = allTopics
-		.map((thread) => {
-			const lastSavedMessage = savedTopics?.find(
-				(t) => t.id === thread.id
-			)?.last_message_id
+	const newMessages: APIMessage[] = []
+	const updatedMessages: APIMessage[] = []
 
-			if (thread.last_message_id !== lastSavedMessage) {
-				// We need to update the last_message_id for this topic
-				existingTopics.push(thread)
-				return { id: thread.id, after: lastSavedMessage }
-			}
-		})
-		.filter((m) => m !== undefined)
+	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
 	// Get messages on a topic
 	// We can't make more then 50 requests per second to Discord API. So we will wait 1 second after each 40 requests
-	const newMessages: APIMessage[] = []
-	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
+	for (let i = 0; i < allTopics.length; i += 40) {
+		const threads = allTopics.slice(i, i + 40)
+		const threadsIds = threads.map((t) => t.id)
 
-	for (let i = 0; i < newMessagesTopics.length; i += 40) {
-		const threads = newMessagesTopics.slice(i, i + 40)
-		newMessages.push(...(await getMessages(threads, env)))
+		const savedMessages =
+			(
+				await supabase
+					.from('messages')
+					.select('id,updated_at')
+					.in('topic_id', threadsIds)
+			).data ?? []
+
+		const messages = await getMessages(threads, env)
+		const nMessages = messages.filter(
+			(m) => !savedMessages.find((sm) => sm.id === m.id)
+		)
+		const uMessages = messages.filter((m) => {
+			const savedMsg = savedMessages.find((sm) => sm.id === m.id)
+
+			if (savedMsg?.updated_at && m.edited_timestamp) {
+				if (new Date(m.edited_timestamp) > new Date(savedMsg.updated_at)) {
+					return m
+				}
+			}
+		})
+
+		newMessages.push(...nMessages)
+		updatedMessages.push(...uMessages)
+
 		await delay(1000)
 	}
 
 	const newUsers: APIUser[] = []
 
-	const savedUserIds =
-		new Set(
-			(await supabase.from('users').select('id')).data?.map((user) => user.id)
-		) ?? []
+	const savedUserIds = new Set(
+		(await supabase.from('users').select('id')).data?.map((user) => user.id)
+	)
+	const allMessages = [...newMessages, ...updatedMessages]
 
-	newMessages.forEach((message) => {
+	allMessages.forEach((message) => {
 		if (
 			!savedUserIds.has(message.author.id) &&
 			!newUsers.find((user) => user.id === message.author.id)
@@ -108,7 +129,7 @@ export const getNewData = async (env: Env) => {
 		}
 	})
 
-	return { newTopics, existingTopics, newMessages, newUsers }
+	return { newTopics, existingTopics, newMessages, updatedMessages, newUsers }
 }
 
 const fetchData = async (url: string, token: string) =>

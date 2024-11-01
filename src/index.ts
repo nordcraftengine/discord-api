@@ -5,10 +5,22 @@ export default {
 	// The scheduled handler is invoked at the interval set in our wrangler.toml's
 	// [[triggers]] configuration.
 	async scheduled(event, env, ctx): Promise<void> {
-		const { newTopics, existingTopics, newMessages, newUsers } =
-			await getNewData(env)
+		const {
+			newTopics,
+			existingTopics,
+			newMessages,
+			updatedMessages,
+			newUsers,
+		} = await getNewData(env)
 
-		await saveData(newTopics, existingTopics, newMessages, newUsers, env)
+		await saveData({
+			topics: newTopics,
+			existingTopics,
+			newMessages,
+			updatedMessages,
+			users: newUsers,
+			env,
+		})
 	},
 
 	async fetch(request, env, ctx): Promise<Response> {
