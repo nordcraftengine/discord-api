@@ -2,36 +2,63 @@ import { getSupabaseClient } from './client'
 import { APIMessage, APIThreadChannel, APIUser } from 'discord-api-types/v10'
 import { parse } from 'discord-markdown-parser'
 
-export const saveData = async (
-	topics: APIThreadChannel[],
-	existingTopics: APIThreadChannel[],
-	messages: APIMessage[],
-	users: APIUser[],
+export const saveData = async ({
+	topics,
+	existingTopics,
+	newMessages,
+	updatedMessages,
+	users,
+	env,
+}: {
+	topics: APIThreadChannel[]
+	existingTopics: APIThreadChannel[]
+	newMessages: APIMessage[]
+	updatedMessages: APIMessage[]
+	users: APIUser[]
 	env: Env
-) => {
+}) => {
 	const supabase = getSupabaseClient(env)
 
-	const formattedUsers = users.map((user) => ({
+	const usersToCreate = users.map((user) => ({
 		id: user.id,
 		name: user.global_name,
 		username: user.username,
 		avatar: user.avatar,
 	}))
 
-	const formattedTopics = topics.map((topic) => ({
-		id: topic.id,
-		name: topic.name,
-		author_id: topic.owner_id,
-		channel_id: topic.parent_id ?? '',
-		last_message_id: topic.last_message_id ?? '',
-		message_count: topic.message_count ?? 0,
-		created_at: topic.thread_metadata?.create_timestamp ?? '',
-	}))
+	const topicsToCreate: {
+		id: string
+		name: string
+		author_id: string | undefined
+		channel_id: string
+		last_message_id: string
+		message_count: number
+		created_at: string
+	}[] = []
 
-	const firstMessageUpdate = topics.map((topic) => ({
-		id: topic.id,
-		first_message_id: topic.id,
-	}))
+	const firstMessageUpdate: {
+		id: string
+		first_message_id: string
+	}[] = []
+
+	topics.forEach((topic) => {
+		const fTopic = {
+			id: topic.id,
+			name: topic.name,
+			author_id: topic.owner_id,
+			channel_id: topic.parent_id ?? '',
+			last_message_id: topic.last_message_id ?? '',
+			message_count: topic.message_count ?? 0,
+			created_at: topic.thread_metadata?.create_timestamp ?? '',
+		}
+		topicsToCreate.push(fTopic)
+
+		const messageUpdate = {
+			id: topic.id,
+			first_message_id: topic.id,
+		}
+		firstMessageUpdate.push(messageUpdate)
+	})
 
 	const lastMessageUpdate = existingTopics.map((topic) => ({
 		id: topic.id,
@@ -41,46 +68,72 @@ export const saveData = async (
 
 	const topicForUpdate = [...firstMessageUpdate, ...lastMessageUpdate]
 
-	const formattedMessages = messages.map((message) => ({
+	const messagesToCreate = newMessages.map((message) => ({
 		id: message.id,
 		content: parse(message.content, 'normal'),
 		author_id: message.author.id,
 		topic_id: message.channel_id,
-		message_reference: message.id,
+		message_reference: message.referenced_message?.id,
 		created_at: message.timestamp,
+		updated_at: message.edited_timestamp,
 	}))
 
-	const formattedMentions = messages.flatMap((message) =>
-		message.mentions.map((mention) => ({
+	const messagesToUpdate = updatedMessages.map((message) => ({
+		id: message.id,
+		content: parse(message.content, 'normal'),
+		updated_at: message.edited_timestamp,
+	}))
+
+	const allMessages = [...newMessages, ...updatedMessages]
+
+	const mentionsToCreate: {
+		message_id: string
+		user_id: string
+	}[] = []
+
+	const reactionsToCreate: {
+		message_id: string
+		emoji: string
+		count: number
+	}[] = []
+
+	const attachmentsToCreate: {
+		id: string
+		message_id: string
+		url: string
+		content_type: string | undefined
+	}[] = []
+
+	allMessages.forEach((message) => {
+		const mentions = message.mentions.map((mention) => ({
 			message_id: message.id,
 			user_id: mention.id,
 		}))
-	)
+		mentionsToCreate.push(...mentions)
 
-	const formattedReactions = messages
-		.flatMap((message) =>
-			message.reactions?.map((reaction) => ({
+		if (message.reactions) {
+			const reactions = message.reactions.map((reaction) => ({
 				message_id: message.id,
 				emoji: reaction.emoji.name ?? '',
 				count: reaction.count,
 			}))
-		)
-		.filter((reaction) => reaction !== undefined)
 
-	const formattedAttachments = messages
-		.flatMap((message) =>
-			message.attachments.map((attachment) => ({
-				id: attachment.id,
-				message_id: message.id,
-				url: attachment.url,
-				content_type: attachment.content_type,
-			}))
-		)
-		.filter((attachment) => attachment !== undefined)
+			reactionsToCreate.push(...reactions)
+		}
+
+		const attachments = message.attachments.map((attachment) => ({
+			id: attachment.id,
+			message_id: message.id,
+			url: attachment.url,
+			content_type: attachment.content_type,
+		}))
+
+		attachmentsToCreate.push(...attachments)
+	})
 
 	// Save the users
-	if (formattedUsers.length > 0) {
-		const insertUsers = await supabase.from('users').insert(formattedUsers)
+	if (usersToCreate.length > 0) {
+		const insertUsers = await supabase.from('users').insert(usersToCreate)
 
 		if (insertUsers.error) {
 			console.error(
@@ -90,8 +143,8 @@ export const saveData = async (
 	}
 
 	// Save the topics
-	if (formattedTopics.length > 0) {
-		const insertTopics = await supabase.from('topics').insert(formattedTopics)
+	if (topicsToCreate.length > 0) {
+		const insertTopics = await supabase.from('topics').insert(topicsToCreate)
 
 		if (insertTopics.error) {
 			console.error(
@@ -100,11 +153,11 @@ export const saveData = async (
 		}
 	}
 
-	// Save the messages
-	if (formattedMessages.length > 0) {
+	// Add messages
+	if (messagesToCreate.length > 0) {
 		const insertMessages = await supabase
 			.from('messages')
-			.insert(formattedMessages)
+			.insert(messagesToCreate)
 
 		if (insertMessages.error) {
 			console.error(
@@ -113,29 +166,81 @@ export const saveData = async (
 		}
 	}
 
-	// Update the topics
-	if (topicForUpdate.length > 0) {
+	// Update messages
+	if (messagesToUpdate.length > 0) {
 		Promise.all(
-			topicForUpdate.map(async (topic) => {
-				const updateTopics = await supabase
-					.from('topics')
-					.update(topic)
-					.eq('id', topic.id)
+			messagesToUpdate.map(async (message) => {
+				const updateMessage = await supabase
+					.from('messages')
+					.update(message)
+					.eq('id', message.id)
 
-				if (updateTopics.error) {
+				if (updateMessage.error) {
 					console.error(
-						`There was an error when updating the topics ${updateTopics.error.message}`
+						`There was an error when updating the message ${updateMessage.error.message}`
+					)
+				}
+
+				// Since we are updating messages we want to delete all the mentions, reactions and attacments for them and recreate it after
+				const deleteMentions = await supabase
+					.from('mentions')
+					.delete()
+					.eq('message_id', message.id)
+
+				if (deleteMentions.error) {
+					console.error(
+						`There was an error when deleting the mentions ${deleteMentions.error.message}`
+					)
+				}
+
+				const deleteReactions = await supabase
+					.from('reactions')
+					.delete()
+					.eq('message_id', message.id)
+
+				if (deleteReactions.error) {
+					console.error(
+						`There was an error when deleting the reactions ${deleteReactions.error.message}`
+					)
+				}
+
+				const deleteAttachments = await supabase
+					.from('attachments')
+					.delete()
+					.eq('message_id', message.id)
+
+				if (deleteAttachments.error) {
+					console.error(
+						`There was an error when deleting the atachments ${deleteAttachments.error.message}`
 					)
 				}
 			})
 		)
 	}
 
-	// Save the mentions
-	if (formattedMentions.length > 0) {
+	// Update the topics
+	if (topicForUpdate.length > 0) {
+		Promise.all(
+			topicForUpdate.map(async (topic) => {
+				const updateTopic = await supabase
+					.from('topics')
+					.update(topic)
+					.eq('id', topic.id)
+
+				if (updateTopic.error) {
+					console.error(
+						`There was an error when updating the topics ${updateTopic.error.message}`
+					)
+				}
+			})
+		)
+	}
+
+	// Add mentions
+	if (mentionsToCreate.length > 0) {
 		const insertMentions = await supabase
 			.from('mentions')
-			.insert(formattedMentions)
+			.insert(mentionsToCreate)
 
 		if (insertMentions.error) {
 			console.error(
@@ -144,11 +249,11 @@ export const saveData = async (
 		}
 	}
 
-	// Save the reactions
-	if (formattedReactions.length > 0) {
+	// Add reactions
+	if (reactionsToCreate.length > 0) {
 		const insertReactions = await supabase
 			.from('reactions')
-			.insert(formattedReactions)
+			.insert(reactionsToCreate)
 
 		if (insertReactions.error) {
 			console.error(
@@ -157,11 +262,11 @@ export const saveData = async (
 		}
 	}
 
-	// Save the reactions
-	if (formattedAttachments.length > 0) {
+	// Add reactions
+	if (attachmentsToCreate.length > 0) {
 		const insertAttachments = await supabase
 			.from('attachments')
-			.insert(formattedAttachments)
+			.insert(attachmentsToCreate)
 
 		if (insertAttachments.error) {
 			console.error(

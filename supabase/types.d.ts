@@ -104,6 +104,7 @@ export type Database = {
           id: string
           message_reference: string | null
           topic_id: string
+          updated_at: string | null
         }
         Insert: {
           author_id?: string | null
@@ -112,6 +113,7 @@ export type Database = {
           id: string
           message_reference?: string | null
           topic_id: string
+          updated_at?: string | null
         }
         Update: {
           author_id?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           id?: string
           message_reference?: string | null
           topic_id?: string
+          updated_at?: string | null
         }
         Relationships: [
           {
