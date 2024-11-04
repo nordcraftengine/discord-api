@@ -11,7 +11,6 @@ import {
 	CachedURL,
 	redirectResponse,
 	RefreshedResponse,
-	withCORS,
 } from './helpers'
 import { Context } from 'hono'
 
@@ -168,17 +167,8 @@ export const fetchAttachment = async (ctx: Context) => {
 	const request = ctx.req
 	const env = ctx.env
 
-	const attachment_url = new URL(ctx.req.param('url'))
-
-	console.log('attachment_url', attachment_url)
-
-	const params = new URLSearchParams(attachment_url.search)
-	if (params.get('ex') && params.get('is') && params.get('hm')) {
-		const expires = new Date(parseInt(params.get('ex') ?? '', 16) * 1000)
-		if (expires.getTime() > Date.now()) {
-			return redirectResponse(request, attachment_url.href, expires, 'original')
-		}
-	}
+	const origin = 'https://cdn.discordapp.com'
+	const attachment_url = new URL(origin + ctx.req.param('url'))
 
 	const file_name = attachment_url.pathname.split('/').pop() ?? ''
 
@@ -209,7 +199,9 @@ export const fetchAttachment = async (ctx: Context) => {
 	)
 
 	// If failed return original Discord API response back
-	if (response.status != 200) return withCORS(request, response)
+	if (response.status != 200) {
+		return response
+	}
 
 	const json = await response.json<RefreshedResponse>()
 
@@ -228,5 +220,5 @@ export const fetchAttachment = async (ctx: Context) => {
 	}
 
 	// Return Discord API json which does not have expected data
-	return withCORS(request, Response.json(json, { status: 400 }))
+	return Response.json(json, { status: 400 })
 }

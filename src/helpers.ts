@@ -13,18 +13,6 @@ export interface CachedURL {
 // We can extract previously saved results from the global cache object below.
 export const cache = new Map<string, CachedURL>()
 
-export const withCORS = (
-	request: HonoRequest,
-	response: Response
-): Response => {
-	if (request.header('Origin'))
-		response.headers.set(
-			'Access-Control-Allow-Origin',
-			request.header('Origin') ?? ''
-		)
-	return response
-}
-
 export const redirectResponse = (
 	request: HonoRequest,
 	href: string,
@@ -34,7 +22,12 @@ export const redirectResponse = (
 	// 302 Found https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/302
 	const response = new Response('', { status: 302 })
 	response.headers.set('Location', href)
+	response.headers.set(
+		'Cache-Control',
+		`public, max-age=${expires.getSeconds()}`
+	)
+
 	response.headers.set('Expires', expires.toUTCString())
 	response.headers.set('x-discord-cdn-proxy', custom)
-	return withCORS(request, response)
+	return response
 }
