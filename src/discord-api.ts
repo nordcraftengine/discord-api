@@ -65,18 +65,20 @@ const getMessages = async (threads: { id: string }[], env: Env) => {
 
 const getChannels = async (env: Env) => {
 	const channelsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/channels`
+	try {
+		const response = await fetchData(channelsUrl, env.DISCORD_TOKEN)
+		const channels = (await response.json()) as APIPartialChannel[]
 
-	const response = await fetchData(channelsUrl, env.DISCORD_TOKEN)
-
-	const channels = (await response.json()) as APIPartialChannel[]
-
-	return channels
+		return channels
+	} catch (error: any) {
+		console.error(`Error when fetching the channels:`, error)
+	}
 }
 
 export const getNewData = async (env: Env) => {
 	const supabase = getSupabaseClient(env)
 
-	const allChannels = await getChannels(env)
+	const allChannels = (await getChannels(env)) ?? []
 	const savedChannels = (await supabase.from('channels').select('*')).data ?? []
 	const savedChannelsIds = new Set(savedChannels?.map((t) => t.id))
 
@@ -247,6 +249,4 @@ export const fetchAttachment = async (ctx: Context) => {
 		console.error(`Error:`, error)
 		return new Response(error, { status: 500 })
 	}
-
-	// Return Discord API json which does not have expected data
 }
