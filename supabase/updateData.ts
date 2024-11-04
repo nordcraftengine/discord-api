@@ -1,8 +1,14 @@
 import { getSupabaseClient } from './client'
-import { APIMessage, APIThreadChannel, APIUser } from 'discord-api-types/v10'
+import {
+	APIMessage,
+	APIPartialChannel,
+	APIThreadChannel,
+	APIUser,
+} from 'discord-api-types/v10'
 import { parse } from 'discord-markdown-parser'
 
 export const saveData = async ({
+	channels,
 	topics,
 	existingTopics,
 	newMessages,
@@ -11,6 +17,7 @@ export const saveData = async ({
 	users,
 	env,
 }: {
+	channels: APIPartialChannel[]
 	topics: APIThreadChannel[]
 	existingTopics: APIThreadChannel[]
 	newMessages: APIMessage[]
@@ -20,6 +27,11 @@ export const saveData = async ({
 	env: Env
 }) => {
 	const supabase = getSupabaseClient(env)
+
+	const channelsToCreate = channels.map((channel) => ({
+		id: channel.id,
+		name: channel.name ?? '',
+	}))
 
 	const usersToCreate = users.map((user) => ({
 		id: user.id,
@@ -132,6 +144,19 @@ export const saveData = async ({
 
 		attachmentsToCreate.push(...attachments)
 	})
+
+	// Add the channels
+	if (channels.length > 0) {
+		const insertChannels = await supabase
+			.from('channels')
+			.insert(channelsToCreate)
+
+		if (insertChannels.error) {
+			console.error(
+				`There was an error when inserting the channels ${insertChannels.error.message}`
+			)
+		}
+	}
 
 	// Save the users
 	if (usersToCreate.length > 0) {

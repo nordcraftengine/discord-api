@@ -63,6 +63,21 @@ export type Database = {
           },
         ]
       }
+      channels: {
+        Row: {
+          id: string
+          name: string
+        }
+        Insert: {
+          id: string
+          name: string
+        }
+        Update: {
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       mentions: {
         Row: {
           id: string
