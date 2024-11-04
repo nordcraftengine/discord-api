@@ -22,7 +22,8 @@
 	"dependencies": {
 		"@supabase/supabase-js": "^2.45.5",
 		"discord-api-types": "^0.37.103",
-		"discord-markdown-parser": "^1.1.0"
+		"discord-markdown-parser": "^1.1.0",
+		"hono": "^4.6.8"
 	},
 	"description": "Fetch data from the Discord API and save it in the database",
 	"main": "index.js",
