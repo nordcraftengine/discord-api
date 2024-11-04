@@ -4,6 +4,7 @@ import {
 	APIUser,
 	RESTGetAPIChannelUsersThreadsArchivedResult,
 	APIThreadChannel,
+	APIPartialChannel,
 } from 'discord-api-types/v10'
 
 import {
@@ -19,7 +20,7 @@ export const HELP_CHANNEL_ID = '1075718033781305414'
 const DISCORD_URL = 'https://discord.com/api/v10'
 const DISCORD_ORIGIN = 'https://cdn.discordapp.com/'
 
-export const getAllTopics = async (env: Env, channelId?: string) => {
+const getAllTopics = async (env: Env, channelId?: string) => {
 	const threadsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/threads/active`
 
 	const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
@@ -62,8 +63,29 @@ const getMessages = async (threads: { id: string }[], env: Env) => {
 	return messages
 }
 
+const getChannels = async (env: Env) => {
+	const channelsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/channels`
+	try {
+		const response = await fetchData(channelsUrl, env.DISCORD_TOKEN)
+		const channels = (await response.json()) as APIPartialChannel[]
+
+		return channels
+	} catch (error: any) {
+		console.error(`Error when fetching the channels:`, error)
+	}
+}
+
 export const getNewData = async (env: Env) => {
 	const supabase = getSupabaseClient(env)
+
+	const allChannels = (await getChannels(env)) ?? []
+	const savedChannels = (await supabase.from('channels').select('*')).data ?? []
+	const savedChannelsIds = new Set(savedChannels?.map((t) => t.id))
+
+	// Get the new channels
+	const newChannels = allChannels.filter(
+		(channel) => !savedChannelsIds.has(channel.id)
+	)
 
 	const allTopics = await getAllTopics(env, HELP_CHANNEL_ID)
 	const savedTopics = (await supabase.from('topics').select('*')).data ?? []
@@ -145,6 +167,7 @@ export const getNewData = async (env: Env) => {
 	})
 
 	return {
+		newChannels,
 		newTopics,
 		existingTopics,
 		newMessages,
@@ -226,6 +249,4 @@ export const fetchAttachment = async (ctx: Context) => {
 		console.error(`Error:`, error)
 		return new Response(error, { status: 500 })
 	}
-
-	// Return Discord API json which does not have expected data
 }

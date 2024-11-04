@@ -15,6 +15,7 @@ export default {
 	// [[triggers]] configuration.
 	async scheduled(event, env, ctx): Promise<void> {
 		const {
+			newChannels,
 			newTopics,
 			existingTopics,
 			newMessages,
@@ -24,6 +25,7 @@ export default {
 		} = await getNewData(env)
 
 		await saveData({
+			channels: newChannels,
 			topics: newTopics,
 			existingTopics,
 			newMessages,
