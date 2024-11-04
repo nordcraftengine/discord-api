@@ -9,12 +9,11 @@ import {
 import {
 	cache,
 	CachedURL,
-	handleOPTIONS,
-	parseValidURL,
 	redirectResponse,
 	RefreshedResponse,
 	withCORS,
 } from './helpers'
+import { Context } from 'hono'
 
 const TODDLE_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
@@ -165,26 +164,13 @@ const fetchData = async (url: string, token: string) =>
 		},
 	})
 
-export const fetchAttachment = async (request: Request, env: Env) => {
-	if (request.method === 'OPTIONS') return handleOPTIONS(request)
+export const fetchAttachment = async (ctx: Context) => {
+	const request = ctx.req
+	const env = ctx.env
 
-	if (!env.DISCORD_TOKEN)
-		return withCORS(
-			request,
-			Response.json(`DISCORD_TOKEN is not configured`, { status: 400 })
-		)
+	const attachment_url = new URL(ctx.req.param('url'))
 
-	const decoded = decodeURIComponent(request.url)
-	const urlStart = decoded.indexOf('?')
-	const attachment_url = parseValidURL(decoded.substring(urlStart + 1))
-	if (urlStart < 0 || attachment_url === false)
-		return withCORS(
-			request,
-			Response.json(
-				`Provide Discord CDN url after ?. Example: https://discord-api.toddle.workers.dev/discord-cdn-proxy?https://cdn.discordapp.com/attachments/channel/message/filename.ext`,
-				{ status: 400 }
-			)
-		)
+	console.log('attachment_url', attachment_url)
 
 	const params = new URLSearchParams(attachment_url.search)
 	if (params.get('ex') && params.get('is') && params.get('hm')) {

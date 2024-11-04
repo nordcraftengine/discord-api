@@ -1,17 +1,14 @@
 import { fetchAttachment, getNewData } from './discord-api'
 import { saveData } from '../supabase/updateData'
-import {
-	cache,
-	CachedURL,
-	handleOPTIONS,
-	parseValidURL,
-	redirectResponse,
-	RefreshedResponse,
-	withCORS,
-} from './helpers'
 
-// const CHANNELS = ['1075718033781305414', '1202214812495659028']
-// const DISCORD_CDN_PROXY_BUCKET = 'https://discord-cdn-proxy.it.r.appspot.com/'
+import { Hono } from 'hono'
+import { cors } from 'hono/cors'
+
+const app = new Hono()
+
+app.use('/api/*', cors())
+
+app.get('/api/:url{.*}', fetchAttachment)
 
 export default {
 	// The scheduled handler is invoked at the interval set in our wrangler.toml's
@@ -36,17 +33,5 @@ export default {
 			env,
 		})
 	},
-
-	async fetch(
-		request: Request,
-		env: Env,
-		ctx: ExecutionContext
-	): Promise<Response> {
-		try {
-			return fetchAttachment(request, env)
-		} catch (ex: any) {
-			console.error(`Exception`, ex)
-			return withCORS(request, new Response(ex, { status: 500 }))
-		}
-	},
+	fetch: app.fetch,
 } satisfies ExportedHandler<Env>
