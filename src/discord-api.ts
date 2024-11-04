@@ -17,7 +17,7 @@ import { Context } from 'hono'
 const TODDLE_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
 const DISCORD_URL = 'https://discord.com/api/v10'
-const DISCORD_ORIGIN = 'https://cdn.discordapp.com'
+const DISCORD_ORIGIN = 'https://cdn.discordapp.com/'
 
 export const getAllTopics = async (env: Env, channelId?: string) => {
 	const threadsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/threads/active`
