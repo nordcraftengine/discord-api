@@ -17,6 +17,7 @@ import { Context } from 'hono'
 const TODDLE_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
 const DISCORD_URL = 'https://discord.com/api/v10'
+const DISCORD_ORIGIN = 'https://cdn.discordapp.com'
 
 export const getAllTopics = async (env: Env, channelId?: string) => {
 	const threadsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/threads/active`
@@ -167,19 +168,18 @@ export const fetchAttachment = async (ctx: Context) => {
 	const request = ctx.req
 	const env = ctx.env
 
-	const origin = 'https://cdn.discordapp.com'
-	const attachment_url = new URL(origin + ctx.req.param('url'))
+	const attachmentUrl = new URL(DISCORD_ORIGIN + ctx.req.param('url'))
 
-	const file_name = attachment_url.pathname.split('/').pop() ?? ''
+	const fileName = attachmentUrl.pathname.split('/').pop() ?? ''
 
 	// Check memory cache first
-	const cached_url = cache.get(file_name)
+	const cachedUrl = cache.get(fileName)
 
-	if (cached_url && cached_url.expires.getTime() > Date.now()) {
+	if (cachedUrl && cachedUrl.expires.getTime() > Date.now()) {
 		return redirectResponse(
 			request,
-			cached_url.href,
-			cached_url.expires,
+			cachedUrl.href,
+			cachedUrl.expires,
 			'memory'
 		)
 	}
@@ -190,7 +190,7 @@ export const fetchAttachment = async (ctx: Context) => {
 			Authorization: `Bot ${env.DISCORD_TOKEN}`,
 			'Content-Type': 'application/json',
 		},
-		body: JSON.stringify({ attachment_urls: [attachment_url.href] }),
+		body: JSON.stringify({ attachment_urls: [attachmentUrl.href] }),
 	}
 
 	const response = await fetch(
@@ -203,22 +203,29 @@ export const fetchAttachment = async (ctx: Context) => {
 		return response
 	}
 
-	const json = await response.json<RefreshedResponse>()
+	try {
+		const json = await response.json<RefreshedResponse>()
+		if (
+			Array.isArray(json?.refreshed_urls) &&
+			json.refreshed_urls[0].refreshed
+		) {
+			const refreshedUrl = new URL(json.refreshed_urls[0].refreshed)
+			const params = new URLSearchParams(refreshedUrl.search)
+			// Convert from hex and add seconds
+			const expires = new Date(parseInt(params.get('ex') ?? '', 16) * 1000)
 
-	if (Array.isArray(json?.refreshed_urls) && json.refreshed_urls[0].refreshed) {
-		const refreshed_url = new URL(json.refreshed_urls[0].refreshed)
-		const params = new URLSearchParams(refreshed_url.search)
-		// Convert from hex and add seconds
-		const expires = new Date(parseInt(params.get('ex') ?? '', 16) * 1000)
+			const cachedUrl: CachedURL = { href: refreshedUrl.href, expires }
 
-		const cached_url: CachedURL = { href: refreshed_url.href, expires }
+			// Save to memory cache
+			cache.set(fileName, cachedUrl)
 
-		// Save to memory cache
-		cache.set(file_name, cached_url)
-
-		return redirectResponse(request, refreshed_url.href, expires, 'refreshed')
+			return redirectResponse(request, refreshedUrl.href, expires, 'refreshed')
+		}
+		return Response.json(json, { status: 404 })
+	} catch (error: any) {
+		console.error(`Error:`, error)
+		return new Response(error, { status: 500 })
 	}
 
 	// Return Discord API json which does not have expected data
-	return Response.json(json, { status: 400 })
 }

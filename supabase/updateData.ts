@@ -126,10 +126,7 @@ export const saveData = async ({
 		const attachments = message.attachments.map((attachment) => ({
 			id: attachment.id,
 			message_id: message.id,
-			url: attachment.url.substring(
-				attachment.url.indexOf('/attachments'),
-				attachment.url.indexOf('?')
-			),
+			url: new URL(attachment.url).pathname,
 			content_type: attachment.content_type,
 		}))
 
