@@ -96,6 +96,19 @@ export const getNewData = async (env: Env) => {
 
 	const existingTopics: APIThreadChannel[] = []
 
+	//Get the saved topics with new messages
+	allTopics
+		.filter((thread) => savedTopicIds.has(thread.id))
+		.map((thread) => {
+			const lastSavedMessage = savedTopics?.find(
+				(t) => t.id === thread.id
+			)?.last_message_id
+			if (thread.last_message_id !== lastSavedMessage) {
+				// We need to update the last_message_id for this topic
+				existingTopics.push(thread)
+			}
+		})
+
 	const newMessages: APIMessage[] = []
 	const updatedMessages: APIMessage[] = []
 	const deleteMessageIds: string[] = []
