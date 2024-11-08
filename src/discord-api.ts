@@ -98,14 +98,14 @@ export const getNewData = async (env: Env) => {
 
 	//Get the saved topics with new messages
 	allTopics
-		.filter((thread) => savedTopicIds.has(thread.id))
-		.map((thread) => {
-			const lastSavedMessage = savedTopics?.find(
-				(t) => t.id === thread.id
+		.filter((topic) => savedTopicIds.has(topic.id))
+		.map((topic) => {
+			const lastSavedMessageId = savedTopics?.find(
+				(t) => t.id === topic.id
 			)?.last_message_id
-			if (thread.last_message_id !== lastSavedMessage) {
+			if (topic.last_message_id !== lastSavedMessageId) {
 				// We need to update the last_message_id for this topic
-				existingTopics.push(thread)
+				existingTopics.push(topic)
 			}
 		})
 
