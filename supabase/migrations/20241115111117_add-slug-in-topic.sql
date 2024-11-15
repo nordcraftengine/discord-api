@@ -1,3 +1,9 @@
+CREATE SCHEMA IF NOT EXISTS private;
+
+GRANT USAGE ON SCHEMA private TO authenticated;
+
+GRANT USAGE ON SCHEMA private TO service_role;
+
 ALTER TABLE topics
     ADD COLUMN slug text;
 
@@ -17,7 +23,7 @@ ALTER TABLE topics
 ALTER TABLE topics
     ADD CONSTRAINT slug_unique UNIQUE (slug);
 
-CREATE OR REPLACE FUNCTION public.valid_slug(slug text)
+CREATE OR REPLACE FUNCTION private.valid_slug(slug text)
     RETURNS boolean
     LANGUAGE plpgsql
     SECURITY DEFINER
@@ -30,5 +36,5 @@ END;
 $function$;
 
 ALTER TABLE topics
-    ADD CONSTRAINT valid_slug CHECK (valid_slug(slug));
+    ADD CONSTRAINT valid_slug CHECK (private.valid_slug(slug));
 

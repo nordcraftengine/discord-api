@@ -269,12 +269,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      valid_slug: {
-        Args: {
-          slug: string
-        }
-        Returns: boolean
-      }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
