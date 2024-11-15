@@ -202,6 +202,7 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
+          slug: string
         }
         Insert: {
           author_id?: string | null
@@ -212,6 +213,7 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
+          slug: string
         }
         Update: {
           author_id?: string | null
@@ -222,6 +224,7 @@ export type Database = {
           last_message_id?: string
           message_count?: number
           name?: string
+          slug?: string
         }
         Relationships: [
           {

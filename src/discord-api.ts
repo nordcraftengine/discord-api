@@ -79,7 +79,8 @@ export const getNewData = async (env: Env) => {
 	const supabase = getSupabaseClient(env)
 
 	const allChannels = (await getChannels(env)) ?? []
-	const savedChannels = (await supabase.from('channels').select('*')).data ?? []
+	const savedChannels =
+		(await supabase.from('channels').select('id')).data ?? []
 	const savedChannelsIds = new Set(savedChannels?.map((t) => t.id))
 
 	// Get the new channels

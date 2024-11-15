@@ -48,14 +48,31 @@ export const saveData = async ({
 		last_message_id: string
 		message_count: number
 		created_at: string
+		slug: string
 	}[] = []
 
 	const firstMessageUpdate: {
 		id: string
-		first_message_id: string
+		first_message_id: string | null
 	}[] = []
+	const savedTopics = (await supabase.from('topics').select('slug')).data ?? []
+	const savedTopicsSlugs = new Set(savedTopics?.map((t) => t.slug))
 
 	topics.forEach((topic) => {
+		const reg = /[^A-Za-z0-9-]/g
+		let slug = topic.name.replaceAll(' ', '-').replaceAll(reg, '')
+		let i = 2
+
+		let isNotUnique = true
+		do {
+			if (savedTopicsSlugs.has(slug)) {
+				slug = `${slug}-${i}`
+				i++
+			} else {
+				isNotUnique = false
+			}
+		} while (isNotUnique)
+
 		const fTopic = {
 			id: topic.id,
 			name: topic.name,
@@ -64,12 +81,15 @@ export const saveData = async ({
 			last_message_id: topic.last_message_id ?? '',
 			message_count: topic.message_count ?? 0,
 			created_at: topic.thread_metadata?.create_timestamp ?? '',
+			slug,
 		}
 		topicsToCreate.push(fTopic)
 
 		const messageUpdate = {
 			id: topic.id,
-			first_message_id: topic.id,
+			first_message_id: newMessages.find((m) => m.id === topic.id)
+				? topic.id
+				: null,
 		}
 		firstMessageUpdate.push(messageUpdate)
 	})
