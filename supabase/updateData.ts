@@ -265,7 +265,6 @@ export const saveData = async ({
 
 	// Update the topics
 	if (topicForUpdate.length > 0) {
-		console.log('topicForUpdate', topicForUpdate)
 		Promise.all(
 			topicForUpdate.map(async (topic) => {
 				const updateTopic = await supabase
