@@ -17,3 +17,18 @@ ALTER TABLE topics
 ALTER TABLE topics
     ADD CONSTRAINT slug_unique UNIQUE (slug);
 
+CREATE OR REPLACE FUNCTION public.valid_slug(slug text)
+    RETURNS boolean
+    LANGUAGE plpgsql
+    SECURITY DEFINER
+    AS $function$
+BEGIN
+    -- Only allow alphanumeric characters and dashes
+    -- in slugs. This should also allow uuids
+    RETURN slug ~ '^[[:alnum:]-]+$';
+END;
+$function$;
+
+ALTER TABLE topics
+    ADD CONSTRAINT valid_slug CHECK (valid_slug(slug));
+

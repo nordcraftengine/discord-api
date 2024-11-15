@@ -53,7 +53,7 @@ export const saveData = async ({
 
 	const firstMessageUpdate: {
 		id: string
-		first_message_id: string
+		first_message_id: string | null
 	}[] = []
 	const savedTopics = (await supabase.from('topics').select('slug')).data ?? []
 	const savedTopicsSlugs = new Set(savedTopics?.map((t) => t.slug))
@@ -87,7 +87,9 @@ export const saveData = async ({
 
 		const messageUpdate = {
 			id: topic.id,
-			first_message_id: topic.id,
+			first_message_id: newMessages.find((m) => m.id === topic.id)
+				? topic.id
+				: null,
 		}
 		firstMessageUpdate.push(messageUpdate)
 	})
