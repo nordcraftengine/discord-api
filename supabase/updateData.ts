@@ -48,6 +48,7 @@ export const saveData = async ({
 		last_message_id: string
 		message_count: number
 		created_at: string
+		updated_at?: string
 		slug: string
 	}[] = []
 
@@ -81,6 +82,10 @@ export const saveData = async ({
 			last_message_id: topic.last_message_id ?? '',
 			message_count: topic.message_count ?? 0,
 			created_at: topic.thread_metadata?.create_timestamp ?? '',
+			updated_at:
+				newMessages.find((m) => m.id === topic.last_message_id)
+					?.edited_timestamp ??
+				newMessages.find((m) => m.id === topic.last_message_id)?.timestamp,
 			slug,
 		}
 		topicsToCreate.push(fTopic)
@@ -136,6 +141,8 @@ export const saveData = async ({
 		message_id: string
 		url: string
 		content_type: string | undefined
+		width?: number | null
+		height?: number | null
 	}[] = []
 
 	allMessages.forEach((message) => {
@@ -160,6 +167,8 @@ export const saveData = async ({
 			message_id: message.id,
 			url: new URL(attachment.url).pathname,
 			content_type: attachment.content_type,
+			width: attachment.width,
+			height: attachment.height,
 		}))
 
 		attachmentsToCreate.push(...attachments)
