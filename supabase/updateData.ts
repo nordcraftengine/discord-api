@@ -345,3 +345,49 @@ export const saveData = async ({
 		}
 	}
 }
+
+// To be deleted after attachments width and height are updated
+
+export const updateAttachments = async ({
+	messagesWithAttachments,
+	env,
+}: {
+	messagesWithAttachments: APIMessage[]
+	env: Env
+}) => {
+	const supabase = getSupabaseClient(env)
+
+	const attachmentsToUpdate: {
+		id: string
+		width?: number | null
+		height?: number | null
+	}[] = []
+
+	messagesWithAttachments.forEach((message) => {
+		const attachments = message.attachments.map((attachment) => ({
+			id: attachment.id,
+			width: attachment.width,
+			height: attachment.height,
+		}))
+
+		attachmentsToUpdate.push(...attachments)
+	})
+
+	// Update the topics
+	if (attachmentsToUpdate.length > 0) {
+		Promise.all(
+			attachmentsToUpdate.map(async (attachment) => {
+				const updateAttachment = await supabase
+					.from('attachments')
+					.update(attachment)
+					.eq('id', attachment.id)
+
+				if (updateAttachment.error) {
+					console.error(
+						`There was an error when updating the attachments ${updateAttachment.error.message}`
+					)
+				}
+			})
+		)
+	}
+}

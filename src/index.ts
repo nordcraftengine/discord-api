@@ -1,5 +1,5 @@
 import { fetchAttachment, getNewData } from './discord-api'
-import { saveData } from '../supabase/updateData'
+import { saveData, updateAttachments } from '../supabase/updateData'
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
@@ -22,6 +22,7 @@ export default {
 			updatedMessages,
 			deleteMessageIds,
 			newUsers,
+			messagesWithAttachments,
 		} = await getNewData(env)
 
 		await saveData({
@@ -34,6 +35,9 @@ export default {
 			users: newUsers,
 			env,
 		})
+
+		// To be deleted after attachments width and height are updated
+		await updateAttachments({ messagesWithAttachments, env })
 	},
 	fetch: app.fetch,
 } satisfies ExportedHandler<Env>
