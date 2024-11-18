@@ -20,3 +20,13 @@ ALTER TABLE attachments
     ADD COLUMN width int,
     ADD COLUMN height int;
 
+UPDATE
+    topics
+SET
+    slug = REGEXP_REPLACE((
+        SELECT
+            t2.slug
+        FROM topics t2
+        WHERE
+            topics.id = t2.id), '-{2,}', '-', 'g');
+

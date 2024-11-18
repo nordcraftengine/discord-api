@@ -61,7 +61,12 @@ export const saveData = async ({
 
 	topics.forEach((topic) => {
 		const reg = /[^A-Za-z0-9-]/g
-		let slug = topic.name.replaceAll(' ', '-').replaceAll(reg, '')
+		const multipleDashesReg = /-{2,}/g
+
+		let slug = topic.name
+			.replaceAll(' ', '-')
+			.replaceAll(reg, '')
+			.replaceAll(multipleDashesReg, '-')
 		let i = 2
 
 		let isNotUnique = true
