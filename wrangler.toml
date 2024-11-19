@@ -1,5 +1,6 @@
 #:schema node_modules/wrangler/config-schema.json
 name = "discord-api"
+account_id = "f6203e7ed21fb722943385aaa3daa65a"
 main = "src/index.ts"
 compatibility_date = "2024-10-11"
 
