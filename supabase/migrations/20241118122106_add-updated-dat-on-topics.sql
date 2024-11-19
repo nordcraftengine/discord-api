@@ -18,7 +18,9 @@ SET
 
 ALTER TABLE attachments
     ADD COLUMN width int,
-    ADD COLUMN height int;
+    ADD COLUMN height int,
+    ADD CONSTRAINT width_nonnegative CHECK (width >= 0),
+    ADD CONSTRAINT height_nonnegative CHECK (height >= 0);
 
 UPDATE
     topics

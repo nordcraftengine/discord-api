@@ -79,6 +79,8 @@ export const saveData = async ({
 			}
 		} while (isNotUnique)
 
+		const lastMessage = newMessages.find((m) => m.id === topic.last_message_id)
+
 		const fTopic = {
 			id: topic.id,
 			name: topic.name,
@@ -87,10 +89,7 @@ export const saveData = async ({
 			last_message_id: topic.last_message_id ?? '',
 			message_count: topic.message_count ?? 0,
 			created_at: topic.thread_metadata?.create_timestamp ?? '',
-			updated_at:
-				newMessages.find((m) => m.id === topic.last_message_id)
-					?.edited_timestamp ??
-				newMessages.find((m) => m.id === topic.last_message_id)?.timestamp,
+			updated_at: lastMessage?.edited_timestamp ?? lastMessage?.timestamp,
 			slug,
 		}
 		topicsToCreate.push(fTopic)
