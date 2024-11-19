@@ -1,0 +1,36 @@
+name: 'Deploy'
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      # package.json changes don't directly mean a dependency was changed
+      # only when bun.lockb changes
+      - '.vscode/**'
+      - '.github/workflows/migrate.yml'
+      - '**/README.md'
+      - '**/.gitignore'
+      - '**/.prettier*'
+      - '**/.eslint*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
+      - name: Install worker dependencies
+        run: bun install --frozen-lockfile
+      - name: Publish worker + assets
+        uses: nick-fields/retry@v3
+        with:
+          timeout_seconds: 60 # Usually a deploy takes 5s
+          max_attempts: 3
+          command: |
+            CLOUDFLARE_API_TOKEN=${{ secrets.CLOUDFLARE_WORKER }} bun deploy
+          on_retry_command: bun scripts/sendDiscordMessage.js "Github deploy for discord-api failed 😭 retrying..."
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_WORKER }}
