@@ -48,6 +48,7 @@ export const saveData = async ({
 		last_message_id: string
 		message_count: number
 		created_at: string
+		updated_at?: string
 		slug: string
 	}[] = []
 
@@ -60,7 +61,12 @@ export const saveData = async ({
 
 	topics.forEach((topic) => {
 		const reg = /[^A-Za-z0-9-]/g
-		let slug = topic.name.replaceAll(' ', '-').replaceAll(reg, '')
+		const multipleDashesReg = /-{2,}/g
+
+		let slug = topic.name
+			.replaceAll(' ', '-')
+			.replaceAll(reg, '')
+			.replaceAll(multipleDashesReg, '-')
 		let i = 2
 
 		let isNotUnique = true
@@ -73,6 +79,8 @@ export const saveData = async ({
 			}
 		} while (isNotUnique)
 
+		const lastMessage = newMessages.find((m) => m.id === topic.last_message_id)
+
 		const fTopic = {
 			id: topic.id,
 			name: topic.name,
@@ -81,6 +89,7 @@ export const saveData = async ({
 			last_message_id: topic.last_message_id ?? '',
 			message_count: topic.message_count ?? 0,
 			created_at: topic.thread_metadata?.create_timestamp ?? '',
+			updated_at: lastMessage?.edited_timestamp ?? lastMessage?.timestamp,
 			slug,
 		}
 		topicsToCreate.push(fTopic)
@@ -136,6 +145,8 @@ export const saveData = async ({
 		message_id: string
 		url: string
 		content_type: string | undefined
+		width?: number | null
+		height?: number | null
 	}[] = []
 
 	allMessages.forEach((message) => {
@@ -160,6 +171,8 @@ export const saveData = async ({
 			message_id: message.id,
 			url: new URL(attachment.url).pathname,
 			content_type: attachment.content_type,
+			width: attachment.width,
+			height: attachment.height,
 		}))
 
 		attachmentsToCreate.push(...attachments)
@@ -334,5 +347,51 @@ export const saveData = async ({
 				`There was an error when deleting the messages ${deleteMessages.error.message}`
 			)
 		}
+	}
+}
+
+// To be deleted after attachments width and height are updated
+
+export const updateAttachments = async ({
+	messagesWithAttachments,
+	env,
+}: {
+	messagesWithAttachments: APIMessage[]
+	env: Env
+}) => {
+	const supabase = getSupabaseClient(env)
+
+	const attachmentsToUpdate: {
+		id: string
+		width?: number | null
+		height?: number | null
+	}[] = []
+
+	messagesWithAttachments.forEach((message) => {
+		const attachments = message.attachments.map((attachment) => ({
+			id: attachment.id,
+			width: attachment.width,
+			height: attachment.height,
+		}))
+
+		attachmentsToUpdate.push(...attachments)
+	})
+
+	// Update the topics
+	if (attachmentsToUpdate.length > 0) {
+		Promise.all(
+			attachmentsToUpdate.map(async (attachment) => {
+				const updateAttachment = await supabase
+					.from('attachments')
+					.update(attachment)
+					.eq('id', attachment.id)
+
+				if (updateAttachment.error) {
+					console.error(
+						`There was an error when updating the attachments ${updateAttachment.error.message}`
+					)
+				}
+			})
+		)
 	}
 }

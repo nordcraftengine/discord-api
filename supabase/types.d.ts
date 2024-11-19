@@ -37,21 +37,27 @@ export type Database = {
       attachments: {
         Row: {
           content_type: string | null
+          height: number | null
           id: string
           message_id: string
           url: string
+          width: number | null
         }
         Insert: {
           content_type?: string | null
+          height?: number | null
           id?: string
           message_id: string
           url: string
+          width?: number | null
         }
         Update: {
           content_type?: string | null
+          height?: number | null
           id?: string
           message_id?: string
           url?: string
+          width?: number | null
         }
         Relationships: [
           {
@@ -203,6 +209,7 @@ export type Database = {
           message_count: number
           name: string
           slug: string
+          updated_at: string | null
         }
         Insert: {
           author_id?: string | null
@@ -214,6 +221,7 @@ export type Database = {
           message_count: number
           name: string
           slug: string
+          updated_at?: string | null
         }
         Update: {
           author_id?: string | null
@@ -225,6 +233,7 @@ export type Database = {
           message_count?: number
           name?: string
           slug?: string
+          updated_at?: string | null
         }
         Relationships: [
           {

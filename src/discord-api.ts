@@ -114,6 +114,9 @@ export const getNewData = async (env: Env) => {
 	const updatedMessages: APIMessage[] = []
 	const deleteMessageIds: string[] = []
 
+	// To be deleted after attachments width and height are updated
+	const messagesWithAttachments: APIMessage[] = []
+
 	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
 	// Get messages on a topic
@@ -148,9 +151,14 @@ export const getNewData = async (env: Env) => {
 			.filter((m) => !messages.find((sm) => sm.id === m.id))
 			.map((m) => m.id)
 
+		// To be deleted after attachments width and height are updated
+		const attchMessages = messages.filter((m) => m.attachments.length > 0)
+
 		newMessages.push(...nMessages)
 		updatedMessages.push(...uMessages)
 		deleteMessageIds.push(...dMessages)
+		// To be deleted after attachments width and height are updated
+		messagesWithAttachments.push(...attchMessages)
 
 		await delay(1000)
 	}
@@ -188,6 +196,7 @@ export const getNewData = async (env: Env) => {
 		updatedMessages,
 		deleteMessageIds,
 		newUsers,
+		messagesWithAttachments,
 	}
 }
 
