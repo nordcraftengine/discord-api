@@ -37,6 +37,7 @@ export type Database = {
       attachments: {
         Row: {
           content_type: string | null
+          filename: string | null
           height: number | null
           id: string
           message_id: string
@@ -45,6 +46,7 @@ export type Database = {
         }
         Insert: {
           content_type?: string | null
+          filename?: string | null
           height?: number | null
           id?: string
           message_id: string
@@ -53,6 +55,7 @@ export type Database = {
         }
         Update: {
           content_type?: string | null
+          filename?: string | null
           height?: number | null
           id?: string
           message_id?: string
