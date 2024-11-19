@@ -147,6 +147,7 @@ export const saveData = async ({
 		content_type: string | undefined
 		width?: number | null
 		height?: number | null
+		filename: string
 	}[] = []
 
 	allMessages.forEach((message) => {
@@ -173,6 +174,7 @@ export const saveData = async ({
 			content_type: attachment.content_type,
 			width: attachment.width,
 			height: attachment.height,
+			filename: attachment.filename,
 		}))
 
 		attachmentsToCreate.push(...attachments)
@@ -363,15 +365,13 @@ export const updateAttachments = async ({
 
 	const attachmentsToUpdate: {
 		id: string
-		width?: number | null
-		height?: number | null
+		filename: string
 	}[] = []
 
 	messagesWithAttachments.forEach((message) => {
 		const attachments = message.attachments.map((attachment) => ({
 			id: attachment.id,
-			width: attachment.width,
-			height: attachment.height,
+			filename: attachment.filename,
 		}))
 
 		attachmentsToUpdate.push(...attachments)
