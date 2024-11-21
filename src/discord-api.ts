@@ -213,13 +213,12 @@ const fetchData = async (url: string, token: string) =>
 export const fetchAttachment = async (ctx: Context) => {
 	const request = ctx.req
 	const env = ctx.env
+	const url = ctx.req.param('url')
 
-	const attachmentUrl = new URL(DISCORD_ORIGIN + ctx.req.param('url'))
-
-	const fileName = attachmentUrl.pathname.split('/').pop() ?? ''
+	const attachmentUrl = new URL(DISCORD_ORIGIN + url)
 
 	// Check memory cache first
-	const cachedUrl = cache.get(fileName)
+	const cachedUrl = cache.get(url)
 
 	if (cachedUrl && cachedUrl.expires.getTime() > Date.now()) {
 		return redirectResponse(
@@ -263,7 +262,7 @@ export const fetchAttachment = async (ctx: Context) => {
 			const cachedUrl: CachedURL = { href: refreshedUrl.href, expires }
 
 			// Save to memory cache
-			cache.set(fileName, cachedUrl)
+			cache.set(url, cachedUrl)
 
 			return redirectResponse(request, refreshedUrl.href, expires, 'refreshed')
 		}
