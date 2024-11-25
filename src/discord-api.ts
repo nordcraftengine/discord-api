@@ -17,11 +17,25 @@ import { Context } from 'hono'
 
 const TODDLE_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
+const LFG_CHANNEL_ID = '1168497459916460114'
 const DISCORD_URL = 'https://discord.com/api/v10'
 const DISCORD_ORIGIN = 'https://cdn.discordapp.com/'
 
 const getAllTopics = async (env: Env, channelId?: string) => {
 	const threadsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/threads/active`
+
+	const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
+
+	const threadsData =
+		(await response.json()) as RESTGetAPIChannelUsersThreadsArchivedResult
+
+	const threads = threadsData.threads as APIThreadChannel[]
+
+	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
+}
+
+const getAllArchivedTopics = async (env: Env, channelId: string) => {
+	const threadsUrl = `${DISCORD_URL}/channels/${channelId}/threads/archived/public`
 
 	const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
 
@@ -271,4 +285,15 @@ export const fetchAttachment = async (ctx: Context) => {
 		console.error(`Error:`, error)
 		return new Response(error, { status: 500 })
 	}
+}
+
+export const getLfgTopics = async (ctx: Context) => {
+	const env = ctx.env
+
+	const activeTopics = await getAllTopics(env, LFG_CHANNEL_ID)
+	const archivedTopics = await getAllArchivedTopics(env, LFG_CHANNEL_ID)
+
+	const topics = [...activeTopics, ...archivedTopics]
+
+	return Response.json(topics, { status: 200 })
 }

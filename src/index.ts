@@ -1,4 +1,4 @@
-import { fetchAttachment, getNewData } from './discord-api'
+import { fetchAttachment, getLfgTopics, getNewData } from './discord-api'
 import { saveData, updateAttachments } from '../supabase/updateData'
 
 import { Hono } from 'hono'
@@ -9,6 +9,8 @@ const app = new Hono()
 app.use('/api/*', cors())
 
 app.get('/api/:url{.*}', fetchAttachment)
+
+app.get('/api/lfg-topics', getLfgTopics)
 
 export default {
 	// The scheduled handler is invoked at the interval set in our wrangler.toml's
