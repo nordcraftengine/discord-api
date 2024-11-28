@@ -3,6 +3,15 @@ ALTER TABLE topics
 
 CREATE INDEX search_idx ON topics USING gin(searchable_index_col);
 
+UPDATE
+    topics t
+SET
+    searchable_index_col = to_tsvector('english', t.name || ' ' || m.content)
+FROM
+    messages m
+WHERE
+    t.first_message_id = m.id;
+
 CREATE OR REPLACE FUNCTION private.update_searchable_index_col()
     RETURNS TRIGGER
     AS $$
@@ -21,16 +30,8 @@ END;
 $$
 LANGUAGE plpgsql;
 
-CREATE TRIGGER topics_update_vector
-    AFTER UPDATE ON topics
+CREATE OR REPLACE TRIGGER topics_update_vector
+    BEFORE UPDATE OF first_message_id ON topics
     FOR EACH ROW
     EXECUTE FUNCTION private.update_searchable_index_col();
 
--- UPDATE
---     topics t
--- SET
---     searchable_index_col = to_tsvector('english', t.name || ' ' || m.content)
--- FROM
---     messages m
--- WHERE
---     t.first_message_id = m.id;
