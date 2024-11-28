@@ -24,7 +24,7 @@ BEGIN
         public.messages m
     WHERE
         m.id = NEW.first_message_id;
-    NEW.searchable_index_col = to_tsvector('english', NEW.name || ' ' || message_content);
+    NEW.searchable_index_col = to_tsvector('english', NEW.name || ' ' || coalesce(message_content, ''));
     RETURN NEW;
 END;
 $$
