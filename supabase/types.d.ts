@@ -211,6 +211,7 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
+          searchable_index_col: unknown | null
           slug: string
           updated_at: string | null
         }
@@ -223,6 +224,7 @@ export type Database = {
           last_message_id: string
           message_count: number
           name: string
+          searchable_index_col?: unknown | null
           slug: string
           updated_at?: string | null
         }
@@ -235,6 +237,7 @@ export type Database = {
           last_message_id?: string
           message_count?: number
           name?: string
+          searchable_index_col?: unknown | null
           slug?: string
           updated_at?: string | null
         }
