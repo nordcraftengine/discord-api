@@ -58,6 +58,10 @@ export const saveData = async ({
 	}[] = []
 	const savedTopics = (await supabase.from('topics').select('slug')).data ?? []
 	const savedTopicsSlugs = new Set(savedTopics?.map((t) => t.slug))
+	const newUserIds = new Set(usersToCreate?.map((user) => user.id))
+	const savedUserIds = new Set(
+		(await supabase.from('users').select('id')).data?.map((user) => user.id)
+	)
 
 	topics.forEach((topic) => {
 		const reg = /[^A-Za-z0-9-]/g
@@ -84,7 +88,11 @@ export const saveData = async ({
 		const fTopic = {
 			id: topic.id,
 			name: topic.name,
-			author_id: topic.owner_id,
+			author_id:
+				topic.owner_id &&
+				(newUserIds.has(topic.owner_id) || savedUserIds.has(topic.owner_id))
+					? topic.owner_id
+					: undefined,
 			channel_id: topic.parent_id ?? '',
 			last_message_id: topic.last_message_id ?? '',
 			message_count: topic.message_count ?? 0,
@@ -207,7 +215,6 @@ export const saveData = async ({
 	// Save the topics
 	if (topicsToCreate.length > 0) {
 		const insertTopics = await supabase.from('topics').insert(topicsToCreate)
-
 		if (insertTopics.error) {
 			console.error(
 				`There was an error when inserting the topics ${insertTopics.error.message}`
