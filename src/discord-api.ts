@@ -106,6 +106,9 @@ export const getNewData = async (env: Env) => {
 	const savedTopics = (await supabase.from('topics').select('*')).data ?? []
 	const savedTopicIds = new Set(savedTopics?.map((t) => t.id))
 
+	const savedReactions =
+		(await supabase.from('reactions').select('*')).data ?? []
+
 	// Get the new topics
 	const newTopics = allTopics.filter((thread) => !savedTopicIds.has(thread.id))
 
@@ -128,6 +131,17 @@ export const getNewData = async (env: Env) => {
 	const updatedMessages: APIMessage[] = []
 	const deleteMessageIds: string[] = []
 
+	const updatedReactions: {
+		id: string
+		count: number
+	}[] = []
+
+	const newReactions: {
+		message_id: string
+		emoji: string
+		count: number
+	}[] = []
+
 	// To be deleted after attachments width and height are updated
 	const messagesWithAttachments: APIMessage[] = []
 
@@ -148,15 +162,50 @@ export const getNewData = async (env: Env) => {
 			).data ?? []
 
 		const messages = await getMessages(threads, env)
-		const nMessages = messages.filter(
-			(m) => !savedMessages.find((sm) => sm.id === m.id)
-		)
-		const uMessages = messages.filter((m) => {
+		messages.map((m) => {
 			const savedMsg = savedMessages.find((sm) => sm.id === m.id)
 
-			if (savedMsg?.updated_at && m.edited_timestamp) {
-				if (new Date(m.edited_timestamp) > new Date(savedMsg.updated_at)) {
-					return m
+			// Message to be created
+			if (!savedMsg) {
+				newMessages.push(m)
+				if (m.reactions) {
+					const reactions = m.reactions.map((reaction) => ({
+						message_id: m.id,
+						emoji: reaction.emoji.name ?? '',
+						count: reaction.count,
+					}))
+
+					newReactions.push(...reactions)
+				}
+			} else {
+				// Message to be updated
+				if (
+					savedMsg.updated_at &&
+					m.edited_timestamp &&
+					new Date(m.edited_timestamp) > new Date(savedMsg.updated_at)
+				) {
+					updatedMessages.push(m)
+				}
+				// Check for new or existing reactions on the existing messages
+				if (m.reactions) {
+					m.reactions.map((reaction) => {
+						const existingReaction = savedReactions.find(
+							(r) => r.message_id === m.id && r.emoji === reaction.emoji.name
+						)
+
+						if (existingReaction && existingReaction.count !== reaction.count) {
+							updatedReactions.push({
+								id: existingReaction.id,
+								count: reaction.count,
+							})
+						} else if (!existingReaction) {
+							newReactions.push({
+								message_id: m.id,
+								emoji: reaction.emoji.name ?? '',
+								count: reaction.count,
+							})
+						}
+					})
 				}
 			}
 		})
@@ -168,8 +217,6 @@ export const getNewData = async (env: Env) => {
 		// To be deleted after attachments width and height are updated
 		const attchMessages = messages.filter((m) => m.attachments.length > 0)
 
-		newMessages.push(...nMessages)
-		updatedMessages.push(...uMessages)
 		deleteMessageIds.push(...dMessages)
 		// To be deleted after attachments width and height are updated
 		messagesWithAttachments.push(...attchMessages)
@@ -211,6 +258,8 @@ export const getNewData = async (env: Env) => {
 		deleteMessageIds,
 		newUsers,
 		messagesWithAttachments,
+		newReactions,
+		updatedReactions,
 	}
 }
 

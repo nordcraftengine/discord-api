@@ -15,6 +15,8 @@ export const saveData = async ({
 	updatedMessages,
 	deleteMessageIds,
 	users,
+	newReactions,
+	updatedReactions,
 	env,
 }: {
 	channels: APIPartialChannel[]
@@ -24,6 +26,15 @@ export const saveData = async ({
 	updatedMessages: APIMessage[]
 	deleteMessageIds: string[]
 	users: APIUser[]
+	newReactions: {
+		count: number
+		emoji: string
+		message_id: string
+	}[]
+	updatedReactions: {
+		id: string
+		count: number
+	}[]
 	env: Env
 }) => {
 	const supabase = getSupabaseClient(env)
@@ -142,12 +153,6 @@ export const saveData = async ({
 		user_id: string
 	}[] = []
 
-	const reactionsToCreate: {
-		message_id: string
-		emoji: string
-		count: number
-	}[] = []
-
 	const attachmentsToCreate: {
 		id: string
 		message_id: string
@@ -164,16 +169,6 @@ export const saveData = async ({
 			user_id: mention.id,
 		}))
 		mentionsToCreate.push(...mentions)
-
-		if (message.reactions) {
-			const reactions = message.reactions.map((reaction) => ({
-				message_id: message.id,
-				emoji: reaction.emoji.name ?? '',
-				count: reaction.count,
-			}))
-
-			reactionsToCreate.push(...reactions)
-		}
 
 		const attachments = message.attachments.map((attachment) => ({
 			id: attachment.id,
@@ -237,7 +232,7 @@ export const saveData = async ({
 
 	// Update messages
 	if (messagesToUpdate.length > 0) {
-		Promise.all(
+		await Promise.all(
 			messagesToUpdate.map(async (message) => {
 				const updateMessage = await supabase
 					.from('messages')
@@ -289,7 +284,7 @@ export const saveData = async ({
 
 	// Update the topics
 	if (topicForUpdate.length > 0) {
-		Promise.all(
+		await Promise.all(
 			topicForUpdate.map(async (topic) => {
 				const updateTopic = await supabase
 					.from('topics')
@@ -319,10 +314,10 @@ export const saveData = async ({
 	}
 
 	// Add reactions
-	if (reactionsToCreate.length > 0) {
+	if (newReactions.length > 0) {
 		const insertReactions = await supabase
 			.from('reactions')
-			.insert(reactionsToCreate)
+			.insert(newReactions)
 
 		if (insertReactions.error) {
 			console.error(
@@ -331,7 +326,25 @@ export const saveData = async ({
 		}
 	}
 
-	// Add reactions
+	// Update reactions
+	if (updatedReactions.length > 0) {
+		await Promise.all(
+			updatedReactions.map(async (reaction) => {
+				const updateReaction = await supabase
+					.from('reactions')
+					.update(reaction)
+					.eq('id', reaction.id)
+
+				if (updateReaction.error) {
+					console.error(
+						`There was an error when updating the reactions ${updateReaction.error.message}`
+					)
+				}
+			})
+		)
+	}
+
+	// Add attachments
 	if (attachmentsToCreate.length > 0) {
 		const insertAttachments = await supabase
 			.from('attachments')
@@ -384,9 +397,9 @@ export const updateAttachments = async ({
 		attachmentsToUpdate.push(...attachments)
 	})
 
-	// Update the topics
+	// Update attachments
 	if (attachmentsToUpdate.length > 0) {
-		Promise.all(
+		await Promise.all(
 			attachmentsToUpdate.map(async (attachment) => {
 				const updateAttachment = await supabase
 					.from('attachments')
