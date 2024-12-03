@@ -180,9 +180,10 @@ export const getNewData = async (env: Env) => {
 			} else {
 				// Message to be updated
 				if (
-					savedMsg.updated_at &&
-					m.edited_timestamp &&
-					new Date(m.edited_timestamp) > new Date(savedMsg.updated_at)
+					(savedMsg.updated_at &&
+						m.edited_timestamp &&
+						new Date(m.edited_timestamp) > new Date(savedMsg.updated_at)) ||
+					(savedMsg.updated_at === null && m.edited_timestamp)
 				) {
 					updatedMessages.push(m)
 				}
