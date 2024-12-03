@@ -142,6 +142,8 @@ export const getNewData = async (env: Env) => {
 		count: number
 	}[] = []
 
+	const deleteReactionIds: string[] = []
+
 	// To be deleted after attachments width and height are updated
 	const messagesWithAttachments: APIMessage[] = []
 
@@ -187,9 +189,10 @@ export const getNewData = async (env: Env) => {
 				) {
 					updatedMessages.push(m)
 				}
+				const messageReactions = m.reactions
 				// Check for new or existing reactions on the existing messages
-				if (m.reactions) {
-					m.reactions.map((reaction) => {
+				if (messageReactions) {
+					messageReactions.map((reaction) => {
 						const existingReaction = savedReactions.find(
 							(r) => r.message_id === m.id && r.emoji === reaction.emoji.name
 						)
@@ -207,6 +210,15 @@ export const getNewData = async (env: Env) => {
 							})
 						}
 					})
+
+					const deletedReactions = savedReactions
+						.filter((sr) => sr.message_id === m.id)
+						.filter(
+							(sr) => !messageReactions.find((mr) => mr.emoji.name === sr.emoji)
+						)
+						.map((r) => r.id)
+
+					deleteReactionIds.push(...deletedReactions)
 				}
 			}
 		})
@@ -261,6 +273,7 @@ export const getNewData = async (env: Env) => {
 		messagesWithAttachments,
 		newReactions,
 		updatedReactions,
+		deleteReactionIds,
 	}
 }
 

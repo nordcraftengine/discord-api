@@ -27,6 +27,7 @@ export default {
 			messagesWithAttachments,
 			newReactions,
 			updatedReactions,
+			deleteReactionIds,
 		} = await getNewData(env)
 
 		await saveData({
@@ -39,6 +40,7 @@ export default {
 			users: newUsers,
 			newReactions,
 			updatedReactions,
+			deleteReactionIds,
 			env,
 		})
 

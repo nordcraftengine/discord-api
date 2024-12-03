@@ -17,6 +17,7 @@ export const saveData = async ({
 	users,
 	newReactions,
 	updatedReactions,
+	deleteReactionIds,
 	env,
 }: {
 	channels: APIPartialChannel[]
@@ -35,6 +36,7 @@ export const saveData = async ({
 		id: string
 		count: number
 	}[]
+	deleteReactionIds: string[]
 	env: Env
 }) => {
 	const supabase = getSupabaseClient(env)
@@ -342,6 +344,20 @@ export const saveData = async ({
 				}
 			})
 		)
+	}
+
+	// Delete reactions
+	if (deleteReactionIds.length > 0) {
+		const deleteReactions = await supabase
+			.from('reactions')
+			.delete()
+			.in('id', deleteReactionIds)
+
+		if (deleteReactions.error) {
+			console.error(
+				`There was an error when deleting the reactions ${deleteReactions.error.message}`
+			)
+		}
 	}
 
 	// Add attachments
