@@ -9,21 +9,29 @@
 		"cf-typegen": "wrangler types src/worker-configuration.d.ts",
 		"sb:migrate:new": "supabase migration new",
 		"sb:db:reset": "supabase db reset",
-		"sb:codegen": "supabase gen types typescript --local > supabase/types.d.ts"
+		"sb:codegen": "supabase gen types typescript --local > supabase/types.d.ts",
+		"lint": "eslint --quiet --report-unused-disable-directives .",
+		"typecheck": "tsc --noEmit",
+		"watch": "tsc -w"
 	},
 	"devDependencies": {
-		"@cloudflare/workers-types": "^4.20241011.0",
-		"@types/bun": "latest",
-		"eslint": "^9.12.0",
-		"node-loader": "^2.0.0",
-		"typescript": "^5.5.2",
-		"wrangler": "^3.60.3"
+		"@cloudflare/workers-types": "4.20250620.0",
+		"@types/bun": "1.2.17",
+		"eslint": "9.29.0",
+		"@typescript-eslint/eslint-plugin": "8.35.0",
+		"@typescript-eslint/parser": "8.35.0",
+		"node-loader": "2.1.0",
+		"prettier-plugin-organize-imports": "4.1.0",
+		"eslint-plugin-inclusive-language": "2.2.1",
+		"prettier": "3.5.3",
+		"typescript": "5.8.3",
+		"wrangler": "4.21.2"
 	},
 	"dependencies": {
-		"@supabase/supabase-js": "^2.45.5",
-		"discord-api-types": "^0.37.103",
-		"discord-markdown-parser": "^1.1.0",
-		"hono": "^4.6.8"
+		"@supabase/supabase-js": "2.50.2",
+		"discord-api-types": "0.38.13",
+		"discord-markdown-parser": "1.2.0",
+		"hono": "4.8.3"
 	},
 	"description": "Fetch data from the Discord API and save it in the database",
 	"main": "index.js",

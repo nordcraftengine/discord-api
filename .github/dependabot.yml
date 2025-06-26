@@ -1,0 +1,22 @@
+version: 2
+enable-beta-ecosystems: true
+updates:
+  - package-ecosystem: 'bun'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+    open-pull-requests-limit: 5
+    groups:
+      linting:
+        patterns:
+          - '*eslint*'
+          - 'eslint'
+          - 'eslint*'
+      formatting:
+        patterns:
+          - 'prettier'
+          - 'prettier-plugin-organize-imports'
+      cloudflare:
+        patterns:
+          - '@cloudflare/workers-types'
+          - 'wrangler'

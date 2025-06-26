@@ -1,19 +1,14 @@
 import { getSupabaseClient } from '../supabase/client'
-import {
+import type {
 	APIMessage,
 	APIUser,
 	RESTGetAPIChannelUsersThreadsArchivedResult,
 	APIThreadChannel,
 	APIPartialChannel,
 } from 'discord-api-types/v10'
-
-import {
-	cache,
-	CachedURL,
-	redirectResponse,
-	RefreshedResponse,
-} from './helpers'
-import { Context } from 'hono'
+import type { CachedURL, RefreshedResponse } from './helpers'
+import { cache, redirectResponse } from './helpers'
+import type { Context } from 'hono'
 
 const TODDLE_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
@@ -60,7 +55,7 @@ const getMessages = async (threads: { id: string }[], env: Env) => {
 
 					const messageResponse = await fetchData(
 						messagesUrl,
-						env.DISCORD_TOKEN
+						env.DISCORD_TOKEN,
 					)
 
 					const messages = (await messageResponse.json()) as APIMessage[]
@@ -70,7 +65,7 @@ const getMessages = async (threads: { id: string }[], env: Env) => {
 					}
 					return messages
 				} while (fetchMore)
-			})
+			}),
 		)
 	).flat()
 
@@ -99,7 +94,7 @@ export const getNewData = async (env: Env) => {
 
 	// Get the new channels
 	const newChannels = allChannels.filter(
-		(channel) => !savedChannelsIds.has(channel.id)
+		(channel) => !savedChannelsIds.has(channel.id),
 	)
 
 	const allTopics = await getAllTopics(env, HELP_CHANNEL_ID)
@@ -119,7 +114,7 @@ export const getNewData = async (env: Env) => {
 		.filter((topic) => savedTopicIds.has(topic.id))
 		.map((topic) => {
 			const lastSavedMessageId = savedTopics?.find(
-				(t) => t.id === topic.id
+				(t) => t.id === topic.id,
 			)?.last_message_id
 			if (topic.last_message_id !== lastSavedMessageId) {
 				// We need to update the last_message_id for this topic
@@ -194,7 +189,7 @@ export const getNewData = async (env: Env) => {
 				if (messageReactions) {
 					messageReactions.map((reaction) => {
 						const existingReaction = savedReactions.find(
-							(r) => r.message_id === m.id && r.emoji === reaction.emoji.name
+							(r) => r.message_id === m.id && r.emoji === reaction.emoji.name,
 						)
 
 						if (existingReaction && existingReaction.count !== reaction.count) {
@@ -214,7 +209,8 @@ export const getNewData = async (env: Env) => {
 					const deletedReactions = savedReactions
 						.filter((sr) => sr.message_id === m.id)
 						.filter(
-							(sr) => !messageReactions.find((mr) => mr.emoji.name === sr.emoji)
+							(sr) =>
+								!messageReactions.find((mr) => mr.emoji.name === sr.emoji),
 						)
 						.map((r) => r.id)
 
@@ -240,7 +236,7 @@ export const getNewData = async (env: Env) => {
 	const newUsers: APIUser[] = []
 
 	const savedUserIds = new Set(
-		(await supabase.from('users').select('id')).data?.map((user) => user.id)
+		(await supabase.from('users').select('id')).data?.map((user) => user.id),
 	)
 	const allMessages = [...newMessages, ...updatedMessages]
 
@@ -254,7 +250,7 @@ export const getNewData = async (env: Env) => {
 
 		const newMentionUsers = message.mentions.filter(
 			(m) =>
-				!savedUserIds.has(m.id) && !newUsers.find((user) => user.id === m.id)
+				!savedUserIds.has(m.id) && !newUsers.find((user) => user.id === m.id),
 		)
 
 		if (newMentionUsers.length > 0) {
@@ -298,12 +294,12 @@ export const fetchAttachment = async (ctx: Context) => {
 	const cachedUrl = cache.get(url)
 
 	if (cachedUrl && cachedUrl.expires.getTime() > Date.now()) {
-		return redirectResponse(
+		return redirectResponse({
 			request,
-			cachedUrl.href,
-			cachedUrl.expires,
-			'memory'
-		)
+			href: cachedUrl.href,
+			expires: cachedUrl.expires,
+			custom: 'memory',
+		})
 	}
 
 	const payload = {
@@ -317,7 +313,7 @@ export const fetchAttachment = async (ctx: Context) => {
 
 	const response = await fetch(
 		`${DISCORD_URL}/attachments/refresh-urls`,
-		payload
+		payload,
 	)
 
 	// If failed return original Discord API response back
@@ -341,7 +337,12 @@ export const fetchAttachment = async (ctx: Context) => {
 			// Save to memory cache
 			cache.set(url, cachedUrl)
 
-			return redirectResponse(request, refreshedUrl.href, expires, 'refreshed')
+			return redirectResponse({
+				request,
+				href: refreshedUrl.href,
+				expires,
+				custom: 'refreshed',
+			})
 		}
 		return Response.json(json, { status: 404 })
 	} catch (error: any) {

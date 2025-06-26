@@ -1,5 +1,5 @@
 import { getSupabaseClient } from './client'
-import {
+import type {
 	APIMessage,
 	APIPartialChannel,
 	APIThreadChannel,
@@ -73,7 +73,7 @@ export const saveData = async ({
 	const savedTopicsSlugs = new Set(savedTopics?.map((t) => t.slug))
 	const newUserIds = new Set(usersToCreate?.map((user) => user.id))
 	const savedUserIds = new Set(
-		(await supabase.from('users').select('id')).data?.map((user) => user.id)
+		(await supabase.from('users').select('id')).data?.map((user) => user.id),
 	)
 
 	topics.forEach((topic) => {
@@ -193,7 +193,7 @@ export const saveData = async ({
 
 		if (insertChannels.error) {
 			console.error(
-				`There was an error when inserting the channels ${insertChannels.error.message}`
+				`There was an error when inserting the channels ${insertChannels.error.message}`,
 			)
 		}
 	}
@@ -204,7 +204,7 @@ export const saveData = async ({
 
 		if (insertUsers.error) {
 			console.error(
-				`There was an error when inserting the users ${insertUsers.error.message}`
+				`There was an error when inserting the users ${insertUsers.error.message}`,
 			)
 		}
 	}
@@ -214,7 +214,7 @@ export const saveData = async ({
 		const insertTopics = await supabase.from('topics').insert(topicsToCreate)
 		if (insertTopics.error) {
 			console.error(
-				`There was an error when inserting the topics ${insertTopics.error.message}`
+				`There was an error when inserting the topics ${insertTopics.error.message}`,
 			)
 		}
 	}
@@ -227,7 +227,7 @@ export const saveData = async ({
 
 		if (insertMessages.error) {
 			console.error(
-				`There was an error when inserting the messages ${insertMessages.error.message}`
+				`There was an error when inserting the messages ${insertMessages.error.message}`,
 			)
 		}
 	}
@@ -243,7 +243,7 @@ export const saveData = async ({
 
 				if (updateMessage.error) {
 					console.error(
-						`There was an error when updating the message ${updateMessage.error.message}`
+						`There was an error when updating the message ${updateMessage.error.message}`,
 					)
 				}
 
@@ -255,7 +255,7 @@ export const saveData = async ({
 
 				if (deleteMentions.error) {
 					console.error(
-						`There was an error when deleting the mentions ${deleteMentions.error.message}`
+						`There was an error when deleting the mentions ${deleteMentions.error.message}`,
 					)
 				}
 
@@ -266,7 +266,7 @@ export const saveData = async ({
 
 				if (deleteReactions.error) {
 					console.error(
-						`There was an error when deleting the reactions ${deleteReactions.error.message}`
+						`There was an error when deleting the reactions ${deleteReactions.error.message}`,
 					)
 				}
 
@@ -277,10 +277,10 @@ export const saveData = async ({
 
 				if (deleteAttachments.error) {
 					console.error(
-						`There was an error when deleting the atachments ${deleteAttachments.error.message}`
+						`There was an error when deleting the atachments ${deleteAttachments.error.message}`,
 					)
 				}
-			})
+			}),
 		)
 	}
 
@@ -295,10 +295,10 @@ export const saveData = async ({
 
 				if (updateTopic.error) {
 					console.error(
-						`There was an error when updating the topics ${updateTopic.error.message}`
+						`There was an error when updating the topics ${updateTopic.error.message}`,
 					)
 				}
-			})
+			}),
 		)
 	}
 
@@ -310,7 +310,7 @@ export const saveData = async ({
 
 		if (insertMentions.error) {
 			console.error(
-				`There was an error when inserting the mentions ${insertMentions.error.message}`
+				`There was an error when inserting the mentions ${insertMentions.error.message}`,
 			)
 		}
 	}
@@ -323,7 +323,7 @@ export const saveData = async ({
 
 		if (insertReactions.error) {
 			console.error(
-				`There was an error when inserting the reactions ${insertReactions.error.message}`
+				`There was an error when inserting the reactions ${insertReactions.error.message}`,
 			)
 		}
 	}
@@ -339,10 +339,10 @@ export const saveData = async ({
 
 				if (updateReaction.error) {
 					console.error(
-						`There was an error when updating the reactions ${updateReaction.error.message}`
+						`There was an error when updating the reactions ${updateReaction.error.message}`,
 					)
 				}
-			})
+			}),
 		)
 	}
 
@@ -355,7 +355,7 @@ export const saveData = async ({
 
 		if (deleteReactions.error) {
 			console.error(
-				`There was an error when deleting the reactions ${deleteReactions.error.message}`
+				`There was an error when deleting the reactions ${deleteReactions.error.message}`,
 			)
 		}
 	}
@@ -368,7 +368,7 @@ export const saveData = async ({
 
 		if (insertAttachments.error) {
 			console.error(
-				`There was an error when inserting the attachments ${insertAttachments.error.message}`
+				`There was an error when inserting the attachments ${insertAttachments.error.message}`,
 			)
 		}
 	}
@@ -382,7 +382,7 @@ export const saveData = async ({
 
 		if (deleteMessages.error) {
 			console.error(
-				`There was an error when deleting the messages ${deleteMessages.error.message}`
+				`There was an error when deleting the messages ${deleteMessages.error.message}`,
 			)
 		}
 	}
@@ -424,10 +424,10 @@ export const updateAttachments = async ({
 
 				if (updateAttachment.error) {
 					console.error(
-						`There was an error when updating the attachments ${updateAttachment.error.message}`
+						`There was an error when updating the attachments ${updateAttachment.error.message}`,
 					)
 				}
-			})
+			}),
 		)
 	}
 }
