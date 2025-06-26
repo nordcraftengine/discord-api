@@ -11,6 +11,7 @@
 		"sb:db:reset": "supabase db reset",
 		"sb:codegen": "supabase gen types typescript --local > supabase/types.d.ts",
 		"lint": "eslint --quiet --report-unused-disable-directives .",
+		"prettier": "prettier --check '*.{json,js}' '**/*.{js,ts}'",
 		"typecheck": "tsc --noEmit",
 		"watch": "tsc -w"
 	},
