@@ -15,7 +15,7 @@ app.get('/api/lfg-topics', getLfgTopics)
 export default {
 	// The scheduled handler is invoked at the interval set in our wrangler.toml's
 	// [[triggers]] configuration.
-	async scheduled(event, env, ctx): Promise<void> {
+	async scheduled(_event, env): Promise<void> {
 		const {
 			newChannels,
 			newTopics,

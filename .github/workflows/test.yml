@@ -1,0 +1,21 @@
+name: 'Test'
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
+      - name: Install worker dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun typecheck
+      - name: Lint
+        run: bun lint
