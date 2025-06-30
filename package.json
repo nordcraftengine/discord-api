@@ -24,7 +24,7 @@
 		"node-loader": "2.1.0",
 		"prettier-plugin-organize-imports": "4.1.0",
 		"eslint-plugin-inclusive-language": "2.2.1",
-		"prettier": "3.6.1",
+		"prettier": "3.6.2",
 		"typescript": "5.8.3",
 		"wrangler": "4.21.2"
 	},
