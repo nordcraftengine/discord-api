@@ -30,7 +30,7 @@
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "2.50.2",
-		"discord-api-types": "0.38.13",
+		"discord-api-types": "0.38.15",
 		"discord-markdown-parser": "1.2.0",
 		"hono": "4.8.3"
 	},
