@@ -101,9 +101,6 @@ export const getNewData = async (env: Env) => {
 	const savedTopics = (await supabase.from('topics').select('*')).data ?? []
 	const savedTopicIds = new Set(savedTopics?.map((t) => t.id))
 
-	const savedReactions =
-		(await supabase.from('reactions').select('*')).data ?? []
-
 	// Get the new topics
 	const newTopics = allTopics.filter((thread) => !savedTopicIds.has(thread.id))
 
@@ -159,7 +156,7 @@ export const getNewData = async (env: Env) => {
 			).data ?? []
 
 		const messages = await getMessages(threads, env)
-		messages.map((m) => {
+		for (const m of messages) {
 			const savedMsg = savedMessages.find((sm) => sm.id === m.id)
 
 			// Message to be created
@@ -185,10 +182,13 @@ export const getNewData = async (env: Env) => {
 					updatedMessages.push(m)
 				}
 				const messageReactions = m.reactions
+				const savedMessageReactions =
+					(await supabase.from('reactions').select('*').eq('message_id', m.id))
+						.data ?? []
 				// Check for new or existing reactions on the existing messages
 				if (messageReactions) {
 					messageReactions.map((reaction) => {
-						const existingReaction = savedReactions.find(
+						const existingReaction = savedMessageReactions.find(
 							(r) => r.message_id === m.id && r.emoji === reaction.emoji.name,
 						)
 
@@ -206,7 +206,7 @@ export const getNewData = async (env: Env) => {
 						}
 					})
 
-					const deletedReactions = savedReactions
+					const deletedReactions = savedMessageReactions
 						.filter((sr) => sr.message_id === m.id)
 						.filter(
 							(sr) =>
@@ -217,7 +217,7 @@ export const getNewData = async (env: Env) => {
 					deleteReactionIds.push(...deletedReactions)
 				}
 			}
-		})
+		}
 
 		const dMessages = savedMessages
 			.filter((m) => !messages.find((sm) => sm.id === m.id))
