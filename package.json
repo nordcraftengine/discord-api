@@ -33,7 +33,7 @@
 		"@supabase/supabase-js": "2.50.3",
 		"discord-api-types": "0.38.15",
 		"discord-markdown-parser": "1.2.0",
-		"hono": "4.8.3"
+		"hono": "4.8.4"
 	},
 	"description": "Fetch data from the Discord API and save it in the database",
 	"main": "index.js",
