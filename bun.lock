@@ -5,7 +5,7 @@
       "name": "discord-api",
       "dependencies": {
         "@supabase/supabase-js": "2.50.3",
-        "discord-api-types": "0.38.15",
+        "discord-api-types": "0.38.17",
         "discord-markdown-parser": "1.2.0",
         "hono": "4.8.3",
       },
@@ -344,7 +344,7 @@
 
     "detect-libc": ["detect-libc@2.0.4", "", {}, "sha512-3UDv+G9CsCKO1WKMGw9fwq/SWJYbI0c5Y7LU1AXYoDdbhE2AHQ6N6Nb34sG8Fj7T5APy8qXDCKuuIHd1BR0tVA=="],
 
-    "discord-api-types": ["discord-api-types@0.38.15", "", {}, "sha512-RX3skyRH7p6BlHOW62ztdnIc87+wv4TEJEURMir5k5BbRJ10wK1MCqFEO6USHTol3gkiHLE6wWoHhNQ2pqB4AA=="],
+    "discord-api-types": ["discord-api-types@0.38.17", "", {}, "sha512-/fCx5jdUoR2hBFcj77Qx7Tmx1Ub8V/QpyS6uorjFvxRLcJJ348QxMFml9QW/eXh3i46eO4Ve8qGVepStpInEPg=="],
 
     "discord-markdown-parser": ["discord-markdown-parser@1.2.0", "", { "dependencies": { "@khanacademy/simple-markdown": "^0.13.6" } }, "sha512-RSvx1cEBT/k7Vgvj5yW+RZ+uvGcIHem86CTsWnCEivoker0UrRqmZagQCYS/jj0OM1C7HXFsqOPu8OwwcBLCuA=="],
 
