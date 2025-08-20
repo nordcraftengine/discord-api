@@ -419,9 +419,10 @@ export const getLfgTopics = async (ctx: Context) => {
 	const env = ctx.env
 
 	const activeTopics = await getAllTopics(env, LFG_CHANNEL_ID)
-	const archivedTopics = await getAllArchivedTopics(env, LFG_CHANNEL_ID)
+	// const archivedTopics = await getAllArchivedTopics(env, LFG_CHANNEL_ID)
 
-	const topics = [...activeTopics, ...archivedTopics]
-
+	// If starting from scratch (empty db), also include archived topics here
+	// const topics = [...activeTopics, ...archivedTopics]
+	const topics = activeTopics
 	return Response.json(topics, { status: 200 })
 }
