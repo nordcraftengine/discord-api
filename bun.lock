@@ -4,6 +4,7 @@
     "": {
       "name": "discord-api",
       "dependencies": {
+        "@khanacademy/simple-markdown": "0.13.20",
         "@supabase/supabase-js": "2.50.3",
         "discord-api-types": "0.38.15",
         "discord-markdown-parser": "1.2.0",

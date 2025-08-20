@@ -1,3 +1,4 @@
+import { parseDiscordMessage } from '../src/discordParser'
 import { getSupabaseClient } from './client'
 import type {
 	APIMessage,
@@ -5,7 +6,6 @@ import type {
 	APIThreadChannel,
 	APIUser,
 } from 'discord-api-types/v10'
-import { parse } from 'discord-markdown-parser'
 
 export const saveData = async ({
 	channels,
@@ -134,7 +134,7 @@ export const saveData = async ({
 
 	const messagesToCreate = newMessages.map((message) => ({
 		id: message.id,
-		content: parse(message.content, 'normal'),
+		content: parseDiscordMessage(message.content),
 		author_id: message.author.id,
 		topic_id: message.channel_id,
 		message_reference: message.referenced_message?.id,
@@ -144,7 +144,7 @@ export const saveData = async ({
 
 	const messagesToUpdate = updatedMessages.map((message) => ({
 		id: message.id,
-		content: parse(message.content, 'normal'),
+		content: parseDiscordMessage(message.content),
 		updated_at: message.edited_timestamp,
 	}))
 
