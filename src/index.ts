@@ -16,7 +16,9 @@ export default {
 	// The scheduled handler is invoked at the interval set in our wrangler.toml's
 	// [[triggers]] configuration.
 	async scheduled(_event, env): Promise<void> {
+		const start = performance.now()
 		const {
+			allMessageIds,
 			newChannels,
 			newTopics,
 			existingTopics,
@@ -29,8 +31,11 @@ export default {
 			updatedReactions,
 			deleteReactionIds,
 		} = await getNewData(env)
+		console.log(`Fetched all relevant data in ${performance.now() - start}ms`)
 
+		const saveStart = performance.now()
 		await saveData({
+			allMessageIds,
 			channels: newChannels,
 			topics: newTopics,
 			existingTopics,
@@ -43,6 +48,7 @@ export default {
 			deleteReactionIds,
 			env,
 		})
+		console.log(`Saved all relevant data in ${performance.now() - saveStart}ms`)
 
 		// To be deleted after attachments width and height are updated
 		await updateAttachments({ messagesWithAttachments, env })

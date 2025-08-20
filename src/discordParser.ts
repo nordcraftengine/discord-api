@@ -113,31 +113,39 @@ const parserRules: ParserRules = {
 		match: inlineRegex(/^(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/),
 		parse: (capture: Capture) => {
 			let url = capture[1]
-			const parsedUrl = new URL(url)
-			if (parsedUrl.hostname === 'toddle.dev') {
-				const pathParts = parsedUrl.pathname
-					.split('/')
-					.slice(1)
-					.filter((p) => p !== '')
-				if (pathParts[0] === 'docs') {
-					// Handle docs redirects
-					url =
-						DOCS_REDIRECTS[parsedUrl.pathname.slice(1)] ??
-						'https://docs.nordcraft.com'
-				} else if (pathParts[0] === 'projects') {
-					if (pathParts.length > 2) {
-						url = `https://editor.nordcraft.com${parsedUrl.pathname}${parsedUrl.search}`
+			try {
+				const parsedUrl = new URL(url)
+				if (parsedUrl.hostname === 'toddle.dev') {
+					const pathParts = parsedUrl.pathname
+						.split('/')
+						.slice(1)
+						.filter((p) => p !== '')
+					if (pathParts[0] === 'docs') {
+						// Handle docs redirects
+						url =
+							DOCS_REDIRECTS[parsedUrl.pathname.slice(1)] ??
+							'https://docs.nordcraft.com'
+					} else if (pathParts[0] === 'projects') {
+						if (pathParts.length > 2) {
+							url = `https://editor.nordcraft.com${parsedUrl.pathname}${parsedUrl.search}`
+						} else {
+							url = `https://app.nordcraft.com${parsedUrl.pathname}${parsedUrl.search}`
+						}
+					} else if (pathParts[0] === 'blog') {
+						// Handle blog redirects
+						url = `https://blog.nordcraft.com/${pathParts[1] ?? ''}`
+					} else if (pathParts[0] === 'pricing') {
+						url = 'https://nordcraft.com/pricing'
 					} else {
-						url = `https://app.nordcraft.com${parsedUrl.pathname}${parsedUrl.search}`
+						url = `https://nordcraft.com${parsedUrl.pathname}${parsedUrl.search}`
 					}
-				} else if (pathParts[0] === 'blog') {
-					// Handle blog redirects
-					url = `https://blog.nordcraft.com/${pathParts[1] ?? ''}`
-				} else if (pathParts[0] === 'pricing') {
-					url = 'https://nordcraft.com/pricing'
-				} else {
-					url = `https://nordcraft.com${parsedUrl.pathname}${parsedUrl.search}`
 				}
+			} catch (error) {
+				// eslint-disable-next-line no-console
+				console.error(
+					`Error parsing URL: ${error instanceof Error ? error.message : 'Unknown error'}`,
+					url,
+				)
 			}
 			return {
 				content: [

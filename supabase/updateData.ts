@@ -1,3 +1,4 @@
+import type { SingleASTNode } from '@khanacademy/simple-markdown'
 import { parseDiscordMessage } from '../src/discordParser'
 import { getSupabaseClient } from './client'
 import type {
@@ -7,7 +8,18 @@ import type {
 	APIUser,
 } from 'discord-api-types/v10'
 
+interface InsertMessage {
+	id: string
+	content: SingleASTNode[]
+	author_id: string
+	topic_id: string
+	message_reference?: string
+	created_at: string
+	updated_at: string | null
+}
+
 export const saveData = async ({
+	allMessageIds,
 	channels,
 	topics,
 	existingTopics,
@@ -20,6 +32,7 @@ export const saveData = async ({
 	deleteReactionIds,
 	env,
 }: {
+	allMessageIds: Set<string>
 	channels: APIPartialChannel[]
 	topics: APIThreadChannel[]
 	existingTopics: APIThreadChannel[]
@@ -132,7 +145,7 @@ export const saveData = async ({
 
 	const topicForUpdate = [...firstMessageUpdate, ...lastMessageUpdate]
 
-	const messagesToCreate = newMessages.map((message) => ({
+	const messagesToCreate: InsertMessage[] = newMessages.map((message) => ({
 		id: message.id,
 		content: parseDiscordMessage(message.content),
 		author_id: message.author.id,
@@ -211,24 +224,89 @@ export const saveData = async ({
 
 	// Save the topics
 	if (topicsToCreate.length > 0) {
-		const insertTopics = await supabase.from('topics').insert(topicsToCreate)
-		if (insertTopics.error) {
-			console.error(
-				`There was an error when inserting the topics ${insertTopics.error.message}`,
-			)
+		// We insert them 1 at a time to better ensure slugs are unique
+		for (const topic of topicsToCreate) {
+			const insertTopic = await supabase.from('topics').insert(topic)
+			if (insertTopic.error) {
+				console.error(
+					`There was an error when inserting the topic "${topic.slug}": ${insertTopic.error.message}`,
+				)
+				if (insertTopic.error.message.includes('slug_unique')) {
+					// Handle slug uniqueness error
+					const now = new Date()
+					const newSlug = `${topic.slug}-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`
+					console.log('Trying to insert topic with new slug', newSlug)
+					const retryInsert = await supabase
+						.from('topics')
+						.insert({ ...topic, slug: newSlug })
+					if (retryInsert.error) {
+						console.error(
+							`There was an error when inserting the topic with new slug ${retryInsert.error.message}`,
+						)
+					}
+				} else {
+					throw new Error(
+						`There was an error when inserting the topic ${insertTopic.error.message}`,
+					)
+				}
+			}
 		}
 	}
 
 	// Add messages
 	if (messagesToCreate.length > 0) {
-		const insertMessages = await supabase
-			.from('messages')
-			.insert(messagesToCreate)
+		const insertMessages = async (messages: InsertMessage[]) => {
+			const insert = await supabase.from('messages').insert(messages)
+			if (insert.error) {
+				console.error(
+					`There was an error when inserting messages ${insert.error.message}`,
+				)
+				throw new Error(
+					`There was an error when inserting ${messages.length} messages ${insert.error.message}. Messages: ${JSON.stringify(messages.map((m) => ({ id: m.id, ref: m.message_reference })))}`,
+				)
+			}
+		}
+		// Topological sort to ensure referenced messages are inserted first
+		function topologicalSortMessages(
+			messages: InsertMessage[],
+		): InsertMessage[] {
+			const idToMessage = new Map(messages.map((m) => [m.id, m]))
+			const visited = new Set<string>()
+			const result: InsertMessage[] = []
 
-		if (insertMessages.error) {
-			console.error(
-				`There was an error when inserting the messages ${insertMessages.error.message}`,
-			)
+			function visit(message: InsertMessage) {
+				if (visited.has(message.id)) return
+				visited.add(message.id)
+				if (
+					message.message_reference &&
+					idToMessage.has(message.message_reference)
+				) {
+					visit(idToMessage.get(message.message_reference)!)
+				}
+				if (
+					typeof message.message_reference === 'string' &&
+					!allMessageIds.has(message.message_reference)
+				) {
+					// Message reference is not in allMessageIds, so we need to remove it
+					// Perhaps this message was referencing a message in a different channel
+					result.push({ ...message, message_reference: undefined })
+				} else {
+					result.push(message)
+				}
+			}
+
+			for (const message of messages) {
+				visit(message)
+			}
+			return result
+		}
+
+		const messagesToInsert = topologicalSortMessages(messagesToCreate)
+		// Insert messages in chunks of 100
+		const chunkLimit = 100
+		for (let i = 0; i < messagesToInsert.length; i += chunkLimit) {
+			const chunk = messagesToInsert.slice(i, i + chunkLimit)
+			await insertMessages(chunk)
 		}
 	}
 

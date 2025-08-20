@@ -5,19 +5,20 @@ import type {
 	RESTGetAPIChannelUsersThreadsArchivedResult,
 	APIThreadChannel,
 	APIPartialChannel,
+	RESTGetAPIChannelThreadsArchivedPublicResult,
 } from 'discord-api-types/v10'
 import type { CachedURL, RefreshedResponse } from './helpers'
 import { cache, redirectResponse } from './helpers'
 import type { Context } from 'hono'
 
-const TODDLE_SERVER_ID = '972416966683926538'
+const NORDCRAFT_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
 const LFG_CHANNEL_ID = '1168497459916460114'
 const DISCORD_URL = 'https://discord.com/api/v10'
 const DISCORD_ORIGIN = 'https://cdn.discordapp.com/'
 
 const getAllTopics = async (env: Env, channelId?: string) => {
-	const threadsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/threads/active`
+	const threadsUrl = `${DISCORD_URL}/guilds/${NORDCRAFT_SERVER_ID}/threads/active`
 
 	const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
 
@@ -30,14 +31,35 @@ const getAllTopics = async (env: Env, channelId?: string) => {
 }
 
 const getAllArchivedTopics = async (env: Env, channelId: string) => {
-	const threadsUrl = `${DISCORD_URL}/channels/${channelId}/threads/archived/public`
+	const threads: APIThreadChannel[] = []
+	const fetchThreads = async (before?: string) => {
+		let searchParams: URLSearchParams | undefined
+		if (typeof before === 'string') {
+			searchParams = new URLSearchParams({ before })
+		}
+		const threadsUrl = `${DISCORD_URL}/channels/${channelId}/threads/archived/public${searchParams ? `?${searchParams}` : ''}`
+		const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
 
-	const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
+		const threadsData =
+			(await response.json()) as RESTGetAPIChannelThreadsArchivedPublicResult
 
-	const threadsData =
-		(await response.json()) as RESTGetAPIChannelUsersThreadsArchivedResult
-
-	const threads = threadsData.threads as APIThreadChannel[]
+		threads.push(...(threadsData.threads as APIThreadChannel[]))
+		if (threadsData.has_more) {
+			const lastThread = threadsData.threads.at(-1)
+			if (lastThread) {
+				const before = (lastThread as APIThreadChannel).thread_metadata
+					?.archive_timestamp
+				if (
+					typeof before === 'string' &&
+					// Only fetch threads created after January 1, 2024
+					new Date(before) > new Date(2024, 0, 1, 0, 0, 0)
+				) {
+					await fetchThreads(before)
+				}
+			}
+		}
+	}
+	await fetchThreads()
 
 	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
 }
@@ -73,13 +95,14 @@ const getMessages = async (threads: { id: string }[], env: Env) => {
 }
 
 const getChannels = async (env: Env) => {
-	const channelsUrl = `${DISCORD_URL}/guilds/${TODDLE_SERVER_ID}/channels`
+	const channelsUrl = `${DISCORD_URL}/guilds/${NORDCRAFT_SERVER_ID}/channels`
 	try {
 		const response = await fetchData(channelsUrl, env.DISCORD_TOKEN)
 		const channels = (await response.json()) as APIPartialChannel[]
 
 		return channels
 	} catch (error: any) {
+		// eslint-disable-next-line no-console
 		console.error(`Error when fetching the channels:`, error)
 	}
 }
@@ -97,8 +120,28 @@ export const getNewData = async (env: Env) => {
 		(channel) => !savedChannelsIds.has(channel.id),
 	)
 
-	const allTopics = await getAllTopics(env, HELP_CHANNEL_ID)
-	const savedTopics = (await supabase.from('topics').select('*')).data ?? []
+	const activeTopics = await getAllTopics(env, HELP_CHANNEL_ID)
+	const archivedTopics = await getAllArchivedTopics(env, HELP_CHANNEL_ID)
+	const allTopics = [...activeTopics, ...archivedTopics]
+	const savedTopics: {
+		id: string
+		last_message_id: string
+	}[] = []
+	const fetchDbTopics = async (fromIndex: number) => {
+		const endIndex = fromIndex + 999
+		const topics =
+			(
+				await supabase
+					.from('topics')
+					.select('id,last_message_id')
+					.range(fromIndex, endIndex)
+			).data ?? []
+		savedTopics.push(...topics)
+		if (topics.length > 0) {
+			await fetchDbTopics(endIndex + 1)
+		}
+	}
+	await fetchDbTopics(0)
 	const savedTopicIds = new Set(savedTopics?.map((t) => t.id))
 
 	// Get the new topics
@@ -142,20 +185,40 @@ export const getNewData = async (env: Env) => {
 	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
 	// Get messages on a topic
-	// We can't make more then 50 requests per second to Discord API. So we will wait 1 second after each 40 requests
-	for (let i = 0; i < allTopics.length; i += 40) {
-		const threads = allTopics.slice(i, i + 40)
+	// We can't make more then 50 requests per second to Discord API. So we will wait 1 second after each 50 requests
+	await delay(1000)
+	let allMessageIds = new Set<string>()
+	for (let i = 0; i < allTopics.length; i += 50) {
+		const threads = allTopics.slice(i, i + 50)
 		const threadIds = threads.map((t) => t.id)
 
-		const savedMessages =
-			(
-				await supabase
-					.from('messages')
-					.select('id,updated_at')
-					.in('topic_id', threadIds)
-			).data ?? []
+		const savedMessages: {
+			id: string
+			updated_at: string | null
+		}[] = []
+		const fetchDbMessages = async (startIndex: number) => {
+			const endIndex = startIndex + 999
+			const dbMessages =
+				(
+					await supabase
+						.from('messages')
+						.select('id,updated_at')
+						.in('topic_id', threadIds)
+						.range(startIndex, endIndex)
+				).data ?? []
+
+			savedMessages.push(...dbMessages)
+			if (dbMessages.length > 0) {
+				await fetchDbMessages(endIndex + 1)
+			}
+		}
+		await fetchDbMessages(0)
 
 		const messages = await getMessages(threads, env)
+		allMessageIds = new Set([
+			...Array.from(allMessageIds),
+			...messages.map((m) => m.id),
+		])
 		for (const m of messages) {
 			const savedMsg = savedMessages.find((sm) => sm.id === m.id)
 
@@ -259,6 +322,7 @@ export const getNewData = async (env: Env) => {
 	})
 
 	return {
+		allMessageIds,
 		newChannels,
 		newTopics,
 		existingTopics,
@@ -273,8 +337,8 @@ export const getNewData = async (env: Env) => {
 	}
 }
 
-const fetchData = async (url: string, token: string) =>
-	await fetch(url, {
+const fetchData = (url: string, token: string) =>
+	fetch(url, {
 		method: 'GET',
 		headers: {
 			Authorization: `Bot ${token}`,
