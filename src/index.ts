@@ -17,6 +17,7 @@ export default {
 	// [[triggers]] configuration.
 	async scheduled(_event, env): Promise<void> {
 		const start = performance.now()
+		console.log('Starting scheduled data fetch and save')
 		const {
 			allMessageIds,
 			newChannels,

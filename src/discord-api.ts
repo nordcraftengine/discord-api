@@ -30,39 +30,39 @@ const getAllTopics = async (env: Env, channelId?: string) => {
 	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
 }
 
-const getAllArchivedTopics = async (env: Env, channelId: string) => {
-	const threads: APIThreadChannel[] = []
-	const fetchThreads = async (before?: string) => {
-		let searchParams: URLSearchParams | undefined
-		if (typeof before === 'string') {
-			searchParams = new URLSearchParams({ before })
-		}
-		const threadsUrl = `${DISCORD_URL}/channels/${channelId}/threads/archived/public${searchParams ? `?${searchParams}` : ''}`
-		const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
+// const getAllArchivedTopics = async (env: Env, channelId: string) => {
+// 	const threads: APIThreadChannel[] = []
+// 	const fetchThreads = async (before?: string) => {
+// 		let searchParams: URLSearchParams | undefined
+// 		if (typeof before === 'string') {
+// 			searchParams = new URLSearchParams({ before })
+// 		}
+// 		const threadsUrl = `${DISCORD_URL}/channels/${channelId}/threads/archived/public${searchParams ? `?${searchParams}` : ''}`
+// 		const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
 
-		const threadsData =
-			(await response.json()) as RESTGetAPIChannelThreadsArchivedPublicResult
+// 		const threadsData =
+// 			(await response.json()) as RESTGetAPIChannelThreadsArchivedPublicResult
 
-		threads.push(...(threadsData.threads as APIThreadChannel[]))
-		if (threadsData.has_more) {
-			const lastThread = threadsData.threads.at(-1)
-			if (lastThread) {
-				const before = (lastThread as APIThreadChannel).thread_metadata
-					?.archive_timestamp
-				if (
-					typeof before === 'string' &&
-					// Only fetch threads created after January 1, 2024
-					new Date(before) > new Date(2024, 0, 1, 0, 0, 0)
-				) {
-					await fetchThreads(before)
-				}
-			}
-		}
-	}
-	await fetchThreads()
+// 		threads.push(...(threadsData.threads as APIThreadChannel[]))
+// 		if (threadsData.has_more) {
+// 			const lastThread = threadsData.threads.at(-1)
+// 			if (lastThread) {
+// 				const before = (lastThread as APIThreadChannel).thread_metadata
+// 					?.archive_timestamp
+// 				if (
+// 					typeof before === 'string' &&
+// 					// Only fetch threads created after January 1, 2024
+// 					new Date(before) > new Date(2024, 0, 1, 0, 0, 0)
+// 				) {
+// 					await fetchThreads(before)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	await fetchThreads()
 
-	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
-}
+// 	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
+// }
 
 const getMessages = async (threads: { id: string }[], env: Env) => {
 	const messages = (
@@ -121,8 +121,8 @@ export const getNewData = async (env: Env) => {
 	)
 
 	const activeTopics = await getAllTopics(env, HELP_CHANNEL_ID)
-	const archivedTopics = await getAllArchivedTopics(env, HELP_CHANNEL_ID)
-	const allTopics = [...activeTopics, ...archivedTopics]
+	// const archivedTopics = await getAllArchivedTopics(env, HELP_CHANNEL_ID)
+	const allTopics = activeTopics
 	const savedTopics: {
 		id: string
 		last_message_id: string
@@ -410,6 +410,7 @@ export const fetchAttachment = async (ctx: Context) => {
 		}
 		return Response.json(json, { status: 404 })
 	} catch (error: any) {
+		// eslint-disable-next-line no-console
 		console.error(`Error:`, error)
 		return new Response(error, { status: 500 })
 	}
