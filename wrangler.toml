@@ -7,6 +7,7 @@ compatibility_date = "2024-10-11"
 # Cron Triggers
 # Docs: https://developers.cloudflare.com/workers/platform/triggers/cron-triggers/
 # Configuration: https://developers.cloudflare.com/workers/wrangler/configuration/#triggers
+# Visit: http://localhost:60626/cdn-cgi/handler/scheduled locally
 # Run every hour
 [triggers]
 crons = ["0 */1 * * *"] # * * * * * = run every minute
@@ -23,6 +24,6 @@ enabled = true
 # Note: Use secrets to store sensitive data.
 # - https://developers.cloudflare.com/workers/configuration/secrets/
 [vars]
-# DISCORD_TOKEN 
+# DISCORD_TOKEN
 # SUPABASE_API_URL
 # SUPABASE_SECRET_KEY

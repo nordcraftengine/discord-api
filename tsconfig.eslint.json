@@ -1,8 +1,8 @@
 {
-	"compilerOptions": {
-		"noEmit": true,
-		"strict": true,
-		"allowJs": false
-	},
-	"include": ["src"]
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "allowJs": false
+  },
+  "include": ["src"]
 }

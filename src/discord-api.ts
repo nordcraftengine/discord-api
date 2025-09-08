@@ -1,15 +1,14 @@
-import { getSupabaseClient } from '../supabase/client'
 import type {
-	APIMessage,
-	APIUser,
-	RESTGetAPIChannelUsersThreadsArchivedResult,
-	APIThreadChannel,
-	APIPartialChannel,
-	RESTGetAPIChannelThreadsArchivedPublicResult,
+  APIMessage,
+  APIPartialChannel,
+  APIThreadChannel,
+  APIUser,
+  RESTGetAPIChannelUsersThreadsArchivedResult,
 } from 'discord-api-types/v10'
+import type { Context } from 'hono'
+import { getSupabaseClient } from '../supabase/client'
 import type { CachedURL, RefreshedResponse } from './helpers'
 import { cache, redirectResponse } from './helpers'
-import type { Context } from 'hono'
 
 const NORDCRAFT_SERVER_ID = '972416966683926538'
 export const HELP_CHANNEL_ID = '1075718033781305414'
@@ -18,411 +17,412 @@ const DISCORD_URL = 'https://discord.com/api/v10'
 const DISCORD_ORIGIN = 'https://cdn.discordapp.com/'
 
 const getAllTopics = async (env: Env, channelId?: string) => {
-	const threadsUrl = `${DISCORD_URL}/guilds/${NORDCRAFT_SERVER_ID}/threads/active`
+  const threadsUrl = `${DISCORD_URL}/guilds/${NORDCRAFT_SERVER_ID}/threads/active`
 
-	const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
+  const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
 
-	const threadsData =
-		(await response.json()) as RESTGetAPIChannelUsersThreadsArchivedResult
+  const threadsData =
+    (await response.json()) as RESTGetAPIChannelUsersThreadsArchivedResult
 
-	const threads = threadsData.threads as APIThreadChannel[]
+  const threads = threadsData.threads as APIThreadChannel[]
 
-	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
+  return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
 }
 
-const getAllArchivedTopics = async (env: Env, channelId: string) => {
-	const threads: APIThreadChannel[] = []
-	const fetchThreads = async (before?: string) => {
-		let searchParams: URLSearchParams | undefined
-		if (typeof before === 'string') {
-			searchParams = new URLSearchParams({ before })
-		}
-		const threadsUrl = `${DISCORD_URL}/channels/${channelId}/threads/archived/public${searchParams ? `?${searchParams}` : ''}`
-		const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
+// const getAllArchivedTopics = async (env: Env, channelId: string) => {
+// 	const threads: APIThreadChannel[] = []
+// 	const fetchThreads = async (before?: string) => {
+// 		let searchParams: URLSearchParams | undefined
+// 		if (typeof before === 'string') {
+// 			searchParams = new URLSearchParams({ before })
+// 		}
+// 		const threadsUrl = `${DISCORD_URL}/channels/${channelId}/threads/archived/public${searchParams ? `?${searchParams}` : ''}`
+// 		const response = await fetchData(threadsUrl, env.DISCORD_TOKEN)
 
-		const threadsData =
-			(await response.json()) as RESTGetAPIChannelThreadsArchivedPublicResult
+// 		const threadsData =
+// 			(await response.json()) as RESTGetAPIChannelThreadsArchivedPublicResult
 
-		threads.push(...(threadsData.threads as APIThreadChannel[]))
-		if (threadsData.has_more) {
-			const lastThread = threadsData.threads.at(-1)
-			if (lastThread) {
-				const before = (lastThread as APIThreadChannel).thread_metadata
-					?.archive_timestamp
-				if (
-					typeof before === 'string' &&
-					// Only fetch threads created after January 1, 2024
-					new Date(before) > new Date(2024, 0, 1, 0, 0, 0)
-				) {
-					await fetchThreads(before)
-				}
-			}
-		}
-	}
-	await fetchThreads()
+// 		threads.push(...(threadsData.threads as APIThreadChannel[]))
+// 		if (threadsData.has_more) {
+// 			const lastThread = threadsData.threads.at(-1)
+// 			if (lastThread) {
+// 				const before = (lastThread as APIThreadChannel).thread_metadata
+// 					?.archive_timestamp
+// 				if (
+// 					typeof before === 'string' &&
+// 					// Only fetch threads created after January 1, 2024
+// 					new Date(before) > new Date(2024, 0, 1, 0, 0, 0)
+// 				) {
+// 					await fetchThreads(before)
+// 				}
+// 			}
+// 		}
+// 	}
+// 	await fetchThreads()
 
-	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
-}
+// 	return channelId ? threads.filter((t) => t.parent_id === channelId) : threads
+// }
 
 const getMessages = async (threads: { id: string }[], env: Env) => {
-	const messages = (
-		await Promise.all(
-			threads.map(async (thread) => {
-				let lastMessage = undefined
-				let fetchMore = true
-				do {
-					const messagesUrl = lastMessage
-						? `${DISCORD_URL}/channels/${thread.id}/messages?after=${lastMessage}&limit=100`
-						: `${DISCORD_URL}/channels/${thread.id}/messages?limit=100`
+  const messages = (
+    await Promise.all(
+      threads.map(async (thread) => {
+        let lastMessage = undefined
+        let fetchMore = true
+        do {
+          const messagesUrl = lastMessage
+            ? `${DISCORD_URL}/channels/${thread.id}/messages?after=${lastMessage}&limit=100`
+            : `${DISCORD_URL}/channels/${thread.id}/messages?limit=100`
 
-					const messageResponse = await fetchData(
-						messagesUrl,
-						env.DISCORD_TOKEN,
-					)
+          const messageResponse = await fetchData(
+            messagesUrl,
+            env.DISCORD_TOKEN,
+          )
 
-					const messages = (await messageResponse.json()) as APIMessage[]
-					lastMessage = messages.at(-1)?.id
-					if (messages.length < 100) {
-						fetchMore = false
-					}
-					return messages
-				} while (fetchMore)
-			}),
-		)
-	).flat()
+          const messages = (await messageResponse.json()) as APIMessage[]
+          lastMessage = messages.at(-1)?.id
+          if (messages.length < 100) {
+            fetchMore = false
+          }
+          return messages
+        } while (fetchMore)
+      }),
+    )
+  ).flat()
 
-	return messages
+  return messages
 }
 
 const getChannels = async (env: Env) => {
-	const channelsUrl = `${DISCORD_URL}/guilds/${NORDCRAFT_SERVER_ID}/channels`
-	try {
-		const response = await fetchData(channelsUrl, env.DISCORD_TOKEN)
-		const channels = (await response.json()) as APIPartialChannel[]
+  const channelsUrl = `${DISCORD_URL}/guilds/${NORDCRAFT_SERVER_ID}/channels`
+  try {
+    const response = await fetchData(channelsUrl, env.DISCORD_TOKEN)
+    const channels = (await response.json()) as APIPartialChannel[]
 
-		return channels
-	} catch (error: any) {
-		// eslint-disable-next-line no-console
-		console.error(`Error when fetching the channels:`, error)
-	}
+    return channels
+  } catch (error: any) {
+    // eslint-disable-next-line no-console
+    console.error(`Error when fetching the channels:`, error)
+  }
 }
 
 export const getNewData = async (env: Env) => {
-	const supabase = getSupabaseClient(env)
+  const supabase = getSupabaseClient(env)
 
-	const allChannels = (await getChannels(env)) ?? []
-	const savedChannels =
-		(await supabase.from('channels').select('id')).data ?? []
-	const savedChannelsIds = new Set(savedChannels?.map((t) => t.id))
+  const allChannels = (await getChannels(env)) ?? []
+  const savedChannels =
+    (await supabase.from('channels').select('id')).data ?? []
+  const savedChannelsIds = new Set(savedChannels?.map((t) => t.id))
 
-	// Get the new channels
-	const newChannels = allChannels.filter(
-		(channel) => !savedChannelsIds.has(channel.id),
-	)
+  // Get the new channels
+  const newChannels = allChannels.filter(
+    (channel) => !savedChannelsIds.has(channel.id),
+  )
 
-	const activeTopics = await getAllTopics(env, HELP_CHANNEL_ID)
-	const archivedTopics = await getAllArchivedTopics(env, HELP_CHANNEL_ID)
-	const allTopics = [...activeTopics, ...archivedTopics]
-	const savedTopics: {
-		id: string
-		last_message_id: string
-	}[] = []
-	const fetchDbTopics = async (fromIndex: number) => {
-		const endIndex = fromIndex + 999
-		const topics =
-			(
-				await supabase
-					.from('topics')
-					.select('id,last_message_id')
-					.range(fromIndex, endIndex)
-			).data ?? []
-		savedTopics.push(...topics)
-		if (topics.length > 0) {
-			await fetchDbTopics(endIndex + 1)
-		}
-	}
-	await fetchDbTopics(0)
-	const savedTopicIds = new Set(savedTopics?.map((t) => t.id))
+  const activeTopics = await getAllTopics(env, HELP_CHANNEL_ID)
+  // const archivedTopics = await getAllArchivedTopics(env, HELP_CHANNEL_ID)
+  const allTopics = activeTopics
+  const savedTopics: {
+    id: string
+    last_message_id: string
+  }[] = []
+  const fetchDbTopics = async (fromIndex: number) => {
+    const endIndex = fromIndex + 999
+    const topics =
+      (
+        await supabase
+          .from('topics')
+          .select('id,last_message_id')
+          .range(fromIndex, endIndex)
+      ).data ?? []
+    savedTopics.push(...topics)
+    if (topics.length > 0) {
+      await fetchDbTopics(endIndex + 1)
+    }
+  }
+  await fetchDbTopics(0)
+  const savedTopicIds = new Set(savedTopics?.map((t) => t.id))
 
-	// Get the new topics
-	const newTopics = allTopics.filter((thread) => !savedTopicIds.has(thread.id))
+  // Get the new topics
+  const newTopics = allTopics.filter((thread) => !savedTopicIds.has(thread.id))
 
-	const existingTopics: APIThreadChannel[] = []
+  const existingTopics: APIThreadChannel[] = []
 
-	//Get the saved topics with new messages
-	allTopics
-		.filter((topic) => savedTopicIds.has(topic.id))
-		.map((topic) => {
-			const lastSavedMessageId = savedTopics?.find(
-				(t) => t.id === topic.id,
-			)?.last_message_id
-			if (topic.last_message_id !== lastSavedMessageId) {
-				// We need to update the last_message_id for this topic
-				existingTopics.push(topic)
-			}
-		})
+  //Get the saved topics with new messages
+  allTopics
+    .filter((topic) => savedTopicIds.has(topic.id))
+    .map((topic) => {
+      const lastSavedMessageId = savedTopics?.find(
+        (t) => t.id === topic.id,
+      )?.last_message_id
+      if (topic.last_message_id !== lastSavedMessageId) {
+        // We need to update the last_message_id for this topic
+        existingTopics.push(topic)
+      }
+    })
 
-	const newMessages: APIMessage[] = []
-	const updatedMessages: APIMessage[] = []
-	const deleteMessageIds: string[] = []
+  const newMessages: APIMessage[] = []
+  const updatedMessages: APIMessage[] = []
+  const deleteMessageIds: string[] = []
 
-	const updatedReactions: {
-		id: string
-		count: number
-	}[] = []
+  const updatedReactions: {
+    id: string
+    count: number
+  }[] = []
 
-	const newReactions: {
-		message_id: string
-		emoji: string
-		count: number
-	}[] = []
+  const newReactions: {
+    message_id: string
+    emoji: string
+    count: number
+  }[] = []
 
-	const deleteReactionIds: string[] = []
+  const deleteReactionIds: string[] = []
 
-	// To be deleted after attachments width and height are updated
-	const messagesWithAttachments: APIMessage[] = []
+  // To be deleted after attachments width and height are updated
+  const messagesWithAttachments: APIMessage[] = []
 
-	const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
+  const delay = (ms: number) => new Promise((res) => setTimeout(res, ms))
 
-	// Get messages on a topic
-	// We can't make more then 50 requests per second to Discord API. So we will wait 1 second after each 50 requests
-	await delay(1000)
-	let allMessageIds = new Set<string>()
-	for (let i = 0; i < allTopics.length; i += 50) {
-		const threads = allTopics.slice(i, i + 50)
-		const threadIds = threads.map((t) => t.id)
+  // Get messages on a topic
+  // We can't make more then 50 requests per second to Discord API. So we will wait 1 second after each 50 requests
+  await delay(1000)
+  let allMessageIds = new Set<string>()
+  for (let i = 0; i < allTopics.length; i += 50) {
+    const threads = allTopics.slice(i, i + 50)
+    const threadIds = threads.map((t) => t.id)
 
-		const savedMessages: {
-			id: string
-			updated_at: string | null
-		}[] = []
-		const fetchDbMessages = async (startIndex: number) => {
-			const endIndex = startIndex + 999
-			const dbMessages =
-				(
-					await supabase
-						.from('messages')
-						.select('id,updated_at')
-						.in('topic_id', threadIds)
-						.range(startIndex, endIndex)
-				).data ?? []
+    const savedMessages: {
+      id: string
+      updated_at: string | null
+    }[] = []
+    const fetchDbMessages = async (startIndex: number) => {
+      const endIndex = startIndex + 999
+      const dbMessages =
+        (
+          await supabase
+            .from('messages')
+            .select('id,updated_at')
+            .in('topic_id', threadIds)
+            .range(startIndex, endIndex)
+        ).data ?? []
 
-			savedMessages.push(...dbMessages)
-			if (dbMessages.length > 0) {
-				await fetchDbMessages(endIndex + 1)
-			}
-		}
-		await fetchDbMessages(0)
+      savedMessages.push(...dbMessages)
+      if (dbMessages.length > 0) {
+        await fetchDbMessages(endIndex + 1)
+      }
+    }
+    await fetchDbMessages(0)
 
-		const messages = await getMessages(threads, env)
-		allMessageIds = new Set([
-			...Array.from(allMessageIds),
-			...messages.map((m) => m.id),
-		])
-		for (const m of messages) {
-			const savedMsg = savedMessages.find((sm) => sm.id === m.id)
+    const messages = await getMessages(threads, env)
+    allMessageIds = new Set([
+      ...Array.from(allMessageIds),
+      ...messages.map((m) => m.id),
+    ])
+    for (const m of messages) {
+      const savedMsg = savedMessages.find((sm) => sm.id === m.id)
 
-			// Message to be created
-			if (!savedMsg) {
-				newMessages.push(m)
-				if (m.reactions) {
-					const reactions = m.reactions.map((reaction) => ({
-						message_id: m.id,
-						emoji: reaction.emoji.name ?? '',
-						count: reaction.count,
-					}))
+      // Message to be created
+      if (!savedMsg) {
+        newMessages.push(m)
+        if (m.reactions) {
+          const reactions = m.reactions.map((reaction) => ({
+            message_id: m.id,
+            emoji: reaction.emoji.name ?? '',
+            count: reaction.count,
+          }))
 
-					newReactions.push(...reactions)
-				}
-			} else {
-				// Message to be updated
-				if (
-					(savedMsg.updated_at &&
-						m.edited_timestamp &&
-						new Date(m.edited_timestamp) > new Date(savedMsg.updated_at)) ||
-					(savedMsg.updated_at === null && m.edited_timestamp)
-				) {
-					updatedMessages.push(m)
-				}
-				const messageReactions = m.reactions
-				const savedMessageReactions =
-					(await supabase.from('reactions').select('*').eq('message_id', m.id))
-						.data ?? []
-				// Check for new or existing reactions on the existing messages
-				if (messageReactions) {
-					messageReactions.map((reaction) => {
-						const existingReaction = savedMessageReactions.find(
-							(r) => r.message_id === m.id && r.emoji === reaction.emoji.name,
-						)
+          newReactions.push(...reactions)
+        }
+      } else {
+        // Message to be updated
+        if (
+          (savedMsg.updated_at &&
+            m.edited_timestamp &&
+            new Date(m.edited_timestamp) > new Date(savedMsg.updated_at)) ||
+          (savedMsg.updated_at === null && m.edited_timestamp)
+        ) {
+          updatedMessages.push(m)
+        }
+        const messageReactions = m.reactions
+        const savedMessageReactions =
+          (await supabase.from('reactions').select('*').eq('message_id', m.id))
+            .data ?? []
+        // Check for new or existing reactions on the existing messages
+        if (messageReactions) {
+          messageReactions.map((reaction) => {
+            const existingReaction = savedMessageReactions.find(
+              (r) => r.message_id === m.id && r.emoji === reaction.emoji.name,
+            )
 
-						if (existingReaction && existingReaction.count !== reaction.count) {
-							updatedReactions.push({
-								id: existingReaction.id,
-								count: reaction.count,
-							})
-						} else if (!existingReaction) {
-							newReactions.push({
-								message_id: m.id,
-								emoji: reaction.emoji.name ?? '',
-								count: reaction.count,
-							})
-						}
-					})
+            if (existingReaction && existingReaction.count !== reaction.count) {
+              updatedReactions.push({
+                id: existingReaction.id,
+                count: reaction.count,
+              })
+            } else if (!existingReaction) {
+              newReactions.push({
+                message_id: m.id,
+                emoji: reaction.emoji.name ?? '',
+                count: reaction.count,
+              })
+            }
+          })
 
-					const deletedReactions = savedMessageReactions
-						.filter((sr) => sr.message_id === m.id)
-						.filter(
-							(sr) =>
-								!messageReactions.find((mr) => mr.emoji.name === sr.emoji),
-						)
-						.map((r) => r.id)
+          const deletedReactions = savedMessageReactions
+            .filter((sr) => sr.message_id === m.id)
+            .filter(
+              (sr) =>
+                !messageReactions.find((mr) => mr.emoji.name === sr.emoji),
+            )
+            .map((r) => r.id)
 
-					deleteReactionIds.push(...deletedReactions)
-				}
-			}
-		}
+          deleteReactionIds.push(...deletedReactions)
+        }
+      }
+    }
 
-		const dMessages = savedMessages
-			.filter((m) => !messages.find((sm) => sm.id === m.id))
-			.map((m) => m.id)
+    const dMessages = savedMessages
+      .filter((m) => !messages.find((sm) => sm.id === m.id))
+      .map((m) => m.id)
 
-		// To be deleted after attachments width and height are updated
-		const attchMessages = messages.filter((m) => m.attachments.length > 0)
+    // To be deleted after attachments width and height are updated
+    const attchMessages = messages.filter((m) => m.attachments.length > 0)
 
-		deleteMessageIds.push(...dMessages)
-		// To be deleted after attachments width and height are updated
-		messagesWithAttachments.push(...attchMessages)
+    deleteMessageIds.push(...dMessages)
+    // To be deleted after attachments width and height are updated
+    messagesWithAttachments.push(...attchMessages)
 
-		await delay(1000)
-	}
+    await delay(1000)
+  }
 
-	const newUsers: APIUser[] = []
+  const newUsers: APIUser[] = []
 
-	const savedUserIds = new Set(
-		(await supabase.from('users').select('id')).data?.map((user) => user.id),
-	)
-	const allMessages = [...newMessages, ...updatedMessages]
+  const savedUserIds = new Set(
+    (await supabase.from('users').select('id')).data?.map((user) => user.id),
+  )
+  const allMessages = [...newMessages, ...updatedMessages]
 
-	allMessages.forEach((message) => {
-		if (
-			!savedUserIds.has(message.author.id) &&
-			!newUsers.find((user) => user.id === message.author.id)
-		) {
-			newUsers.push(message.author)
-		}
+  allMessages.forEach((message) => {
+    if (
+      !savedUserIds.has(message.author.id) &&
+      !newUsers.find((user) => user.id === message.author.id)
+    ) {
+      newUsers.push(message.author)
+    }
 
-		const newMentionUsers = message.mentions.filter(
-			(m) =>
-				!savedUserIds.has(m.id) && !newUsers.find((user) => user.id === m.id),
-		)
+    const newMentionUsers = message.mentions.filter(
+      (m) =>
+        !savedUserIds.has(m.id) && !newUsers.find((user) => user.id === m.id),
+    )
 
-		if (newMentionUsers.length > 0) {
-			newUsers.push(...newMentionUsers)
-		}
-	})
+    if (newMentionUsers.length > 0) {
+      newUsers.push(...newMentionUsers)
+    }
+  })
 
-	return {
-		allMessageIds,
-		newChannels,
-		newTopics,
-		existingTopics,
-		newMessages,
-		updatedMessages,
-		deleteMessageIds,
-		newUsers,
-		messagesWithAttachments,
-		newReactions,
-		updatedReactions,
-		deleteReactionIds,
-	}
+  return {
+    allMessageIds,
+    newChannels,
+    newTopics,
+    existingTopics,
+    newMessages,
+    updatedMessages,
+    deleteMessageIds,
+    newUsers,
+    messagesWithAttachments,
+    newReactions,
+    updatedReactions,
+    deleteReactionIds,
+  }
 }
 
 const fetchData = (url: string, token: string) =>
-	fetch(url, {
-		method: 'GET',
-		headers: {
-			Authorization: `Bot ${token}`,
-			'Content-Type': 'application/json',
-			Accept: 'application/json',
-		},
-	})
+  fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bot ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+  })
 
 export const fetchAttachment = async (ctx: Context) => {
-	const request = ctx.req
-	const env = ctx.env
-	const url = ctx.req.param('url')
+  const request = ctx.req
+  const env = ctx.env
+  const url = ctx.req.param('url')
 
-	const attachmentUrl = new URL(DISCORD_ORIGIN + url)
+  const attachmentUrl = new URL(DISCORD_ORIGIN + url)
 
-	// Check memory cache first
-	const cachedUrl = cache.get(url)
+  // Check memory cache first
+  const cachedUrl = cache.get(url)
 
-	if (cachedUrl && cachedUrl.expires.getTime() > Date.now()) {
-		return redirectResponse({
-			request,
-			href: cachedUrl.href,
-			expires: cachedUrl.expires,
-			custom: 'memory',
-		})
-	}
+  if (cachedUrl && cachedUrl.expires.getTime() > Date.now()) {
+    return redirectResponse({
+      request,
+      href: cachedUrl.href,
+      expires: cachedUrl.expires,
+      custom: 'memory',
+    })
+  }
 
-	const payload = {
-		method: 'POST',
-		headers: {
-			Authorization: `Bot ${env.DISCORD_TOKEN}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({ attachment_urls: [attachmentUrl.href] }),
-	}
+  const payload = {
+    method: 'POST',
+    headers: {
+      Authorization: `Bot ${env.DISCORD_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ attachment_urls: [attachmentUrl.href] }),
+  }
 
-	const response = await fetch(
-		`${DISCORD_URL}/attachments/refresh-urls`,
-		payload,
-	)
+  const response = await fetch(
+    `${DISCORD_URL}/attachments/refresh-urls`,
+    payload,
+  )
 
-	// If failed return original Discord API response back
-	if (response.status != 200) {
-		return response
-	}
+  // If failed return original Discord API response back
+  if (response.status != 200) {
+    return response
+  }
 
-	try {
-		const json = await response.json<RefreshedResponse>()
-		if (
-			Array.isArray(json?.refreshed_urls) &&
-			json.refreshed_urls[0].refreshed
-		) {
-			const refreshedUrl = new URL(json.refreshed_urls[0].refreshed)
-			const params = new URLSearchParams(refreshedUrl.search)
-			// Convert from hex and add seconds
-			const expires = new Date(parseInt(params.get('ex') ?? '', 16) * 1000)
+  try {
+    const json = await response.json<RefreshedResponse>()
+    if (
+      Array.isArray(json?.refreshed_urls) &&
+      json.refreshed_urls[0].refreshed
+    ) {
+      const refreshedUrl = new URL(json.refreshed_urls[0].refreshed)
+      const params = new URLSearchParams(refreshedUrl.search)
+      // Convert from hex and add seconds
+      const expires = new Date(parseInt(params.get('ex') ?? '', 16) * 1000)
 
-			const cachedUrl: CachedURL = { href: refreshedUrl.href, expires }
+      const cachedUrl: CachedURL = { href: refreshedUrl.href, expires }
 
-			// Save to memory cache
-			cache.set(url, cachedUrl)
+      // Save to memory cache
+      cache.set(url, cachedUrl)
 
-			return redirectResponse({
-				request,
-				href: refreshedUrl.href,
-				expires,
-				custom: 'refreshed',
-			})
-		}
-		return Response.json(json, { status: 404 })
-	} catch (error: any) {
-		console.error(`Error:`, error)
-		return new Response(error, { status: 500 })
-	}
+      return redirectResponse({
+        request,
+        href: refreshedUrl.href,
+        expires,
+        custom: 'refreshed',
+      })
+    }
+    return Response.json(json, { status: 404 })
+  } catch (error: any) {
+    // eslint-disable-next-line no-console
+    console.error(`Error:`, error)
+    return new Response(error, { status: 500 })
+  }
 }
 
 export const getLfgTopics = async (ctx: Context) => {
-	const env = ctx.env
+  const env = ctx.env
 
-	const activeTopics = await getAllTopics(env, LFG_CHANNEL_ID)
-	// const archivedTopics = await getAllArchivedTopics(env, LFG_CHANNEL_ID)
+  const activeTopics = await getAllTopics(env, LFG_CHANNEL_ID)
+  // const archivedTopics = await getAllArchivedTopics(env, LFG_CHANNEL_ID)
 
-	// If starting from scratch (empty db), also include archived topics here
-	// const topics = [...activeTopics, ...archivedTopics]
-	const topics = activeTopics
-	return Response.json(topics, { status: 200 })
+  // If starting from scratch (empty db), also include archived topics here
+  // const topics = [...activeTopics, ...archivedTopics]
+  const topics = activeTopics
+  return Response.json(topics, { status: 200 })
 }
