@@ -134,6 +134,9 @@ const parserRules: ParserRules = {
           } else if (pathParts[0] === 'blog') {
             // Handle blog redirects
             url = `https://blog.nordcraft.com/${pathParts[1] ?? ''}`
+          } else if (pathParts[0] === 'forum') {
+            // Handle forum redirects
+            url = `https://forum.nordcraft.com/${pathParts[1] ?? ''}`
           } else if (pathParts[0] === 'pricing') {
             url = 'https://nordcraft.com/pricing'
           } else {
