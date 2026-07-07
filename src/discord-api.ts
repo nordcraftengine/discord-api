@@ -350,6 +350,9 @@ export const fetchAttachment = async (ctx: Context) => {
   const request = ctx.req
   const env = ctx.env
   const url = ctx.req.param('url')
+  if (typeof url !== 'string') {
+    return Response.json({ error: 'Invalid URL parameter' }, { status: 400 })
+  }
 
   const attachmentUrl = new URL(DISCORD_ORIGIN + url)
 
